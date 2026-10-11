@@ -38,3 +38,7 @@ which GitHub Pages serves. No Actions workflow is used.
 - `public/app/html.js` — RDF embedded in HTML: JSON-LD, microdata, RDFa
 - `public/app/graph.js` — a small graph drawing per table (up to 300 triples)
 - `docs/notes/ld-browser.md` — lab note (Japanese)
+
+## License
+
+MIT (see `LICENSE`).
