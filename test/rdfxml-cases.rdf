@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hand-made cases for src/rdfxml.js; test/check-rdfxml.html compares the result with rdflib's. -->
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+         xmlns:ex="http://example.org/ns#"
+         xml:base="http://example.org/base/doc" xml:lang="ja">
+  <skos:Concept rdf:about="#c1" skos:notation="C1" ex:attr="属性">
+    <skos:prefLabel>概念 1</skos:prefLabel>
+    <skos:prefLabel xml:lang="en">Concept 1</skos:prefLabel>
+    <skos:altLabel xml:lang="">no lang</skos:altLabel>
+    <ex:count rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">3</ex:count>
+    <skos:broader rdf:resource="c0"/>
+    <skos:related rdf:nodeID="n1"/>
+    <ex:inner>
+      <ex:Thing rdf:about="http://example.org/thing">
+        <rdfs:label>物</rdfs:label>
+      </ex:Thing>
+    </ex:inner>
+    <ex:blank rdf:parseType="Resource">
+      <ex:a>A</ex:a>
+      <ex:b rdf:resource="http://example.org/b"/>
+    </ex:blank>
+    <ex:list rdf:parseType="Collection">
+      <rdf:Description rdf:about="http://example.org/l1"/>
+      <rdf:Description rdf:about="http://example.org/l2"/>
+    </ex:list>
+    <ex:emptyList rdf:parseType="Collection"/>
+    <ex:xml rdf:parseType="Literal"><b xmlns="http://www.w3.org/1999/xhtml">bold</b> text</ex:xml>
+    <ex:propAttrs ex:x="1" rdf:type="http://example.org/T"/>
+    <ex:propAttrsRes rdf:resource="http://example.org/r" ex:y="2"/>
+  </skos:Concept>
+  <rdf:Description rdf:nodeID="n1" ex:z="same node"/>
+  <rdf:Description rdf:ID="frag">
+    <rdf:type rdf:resource="http://example.org/T"/>
+  </rdf:Description>
+  <rdf:Bag rdf:about="http://example.org/bag">
+    <rdf:li>one</rdf:li>
+    <rdf:li rdf:resource="http://example.org/two"/>
+  </rdf:Bag>
+  <rdf:Description rdf:about="http://example.org/sub/" xml:base="http://other.example/dir/">
+    <ex:rel rdf:resource="x"/>
+    <ex:abs rdf:resource="http://example.org"/>
+    <ex:empty></ex:empty>
+  </rdf:Description>
+</rdf:RDF>

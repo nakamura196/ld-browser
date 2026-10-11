@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+.npmrc
+.DS_Store
+.idea/
+.vscode/settings.json
+node_modules/
+dist/
+.astro/

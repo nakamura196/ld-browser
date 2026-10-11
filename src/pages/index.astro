@@ -1,0 +1,114 @@
+---
+import Base from "../layouts/Base.astro";
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+const browse = (uri: string) => `${base}browse/?u=${encodeURIComponent(uri)}`;
+
+const examples = [
+  { kind: "RailClass", title: "ICE T（形式）", text: "鉄道車両の形式。運営者や路線が Wikidata の名前で日本語になります。", uri: "https://nakamura196.github.io/train-bodies/rdf/class/Q696668" },
+  { kind: "RailClass", title: "ICE T 411（3D モデル）", text: "模型の 3D データ。形式を自動で開き、塗装の色までたどれます。", uri: "https://nakamura196.github.io/train-bodies/rdf/model/icet_411" },
+  { kind: "Wikidata", title: "ICE T", text: "Wikidata の項目。RailClass に同じ形式があれば、そこへ戻れます。", uri: "http://www.wikidata.org/entity/Q696668" },
+  { kind: "語彙", title: "skos:prefLabel", text: "SKOS の定義。RDF/XML しか返さない語彙も読みます。", uri: "http://www.w3.org/2004/02/skos/core#prefLabel" },
+  { kind: "HTML", title: "schema.org の about", text: "HTML の頁から、埋め込まれた JSON-LD や microdata を取り出します。", uri: "https://schema.org/about" },
+];
+
+// Positions for the hero drawing (a small, fixed graph: it is an illustration, not data).
+const nodes = [
+  { id: "c", x: 250, y: 170, r: 34, t: "ICE T", main: true },
+  { id: "op", x: 100, y: 75, r: 26, t: "ドイツ鉄道" },
+  { id: "wd", x: 440, y: 70, r: 24, t: "Wikidata" },
+  { id: "m", x: 450, y: 265, r: 26, t: "3D モデル" },
+  { id: "g", x: 70, y: 260, r: 22, t: "標準軌" },
+  { id: "l", x: 255, y: 325, r: 22, t: "路線" },
+  { id: "co", x: 575, y: 185, r: 18, t: "赤" },
+  { id: "w", x: 250, y: 28, r: 16, t: "Wikipedia" },
+];
+const edges = [["c", "op", "運営者"], ["c", "wd", "sameAs"], ["m", "c", "形式"], ["c", "g", "軌間"], ["c", "l", "路線での運用"], ["m", "co", "塗装"], ["c", "w", "説明"]];
+// Pills sized to the label (full-width characters ~13px, others ~7.5px at this size).
+for (const n of nodes) {
+  const w = [...n.t].reduce((a, ch) => a + (/[\u3000-\u9fff]/.test(ch) ? 13 : 7.5), 0) * (n.main ? 1.2 : 1);
+  n.w = w + (n.main ? 36 : 24);
+  n.h = n.main ? 40 : 28;
+}
+const at = Object.fromEntries(nodes.map((n) => [n.id, n]));
+// Where the line from a pill's centre towards (dx, dy) leaves the pill.
+const exit = (n, dx, dy) => Math.min(n.w / 2 / Math.abs(dx || 1e-9), n.h / 2 / Math.abs(dy || 1e-9));
+---
+<Base current="home">
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">Linked Data を、ブラウザだけで</p>
+      <h1>URI を入れると、<br><span class="nb">データの<span class="accent">つながり</span>が</span><span class="nb">見える。</span></h1>
+      <p class="lead">RDF をブラウザが直接取りに行き、表とグラフにします。リンクを押せば、Wikidata や語彙の定義へそのままたどれます。サーバは使いません。</p>
+      <form class="uriform big" action={`${base}browse/`} method="get">
+        <input name="u" type="url" placeholder="https://… の URI を入れる" autocomplete="off" required aria-label="見たい URI">
+        <button type="submit">見る</button>
+      </form>
+      <p class="try">試す:
+        {examples.slice(0, 3).map((e) => <a href={browse(e.uri)}>{e.title}</a>)}
+      </p>
+    </div>
+    <svg class="hero-graph" viewBox="0 0 620 360" role="img" aria-label="資源どうしのつながりを表すグラフの例">
+      <defs>
+        <marker id="h-arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" />
+        </marker>
+      </defs>
+      {edges.map(([a, b, t], i) => {
+        const s = at[a], o = at[b];
+        const dx = o.x - s.x, dy = o.y - s.y;
+        const ka = exit(s, dx, dy), kb = exit(o, dx, dy);
+        return (
+          <g class="h-edge" style={`--d:${i * 0.12}s`}>
+            <line x1={s.x + dx * ka} y1={s.y + dy * ka} x2={o.x - dx * kb * 1.04} y2={o.y - dy * kb * 1.04} marker-end="url(#h-arrow)" />
+            <text x={(s.x + o.x) / 2} y={(s.y + o.y) / 2 - 6}>{t}</text>
+          </g>
+        );
+      })}
+      {nodes.map((n, i) => (
+        <g class={`h-node${n.main ? " main" : ""}`} style={`--d:${0.3 + i * 0.08}s`} transform={`translate(${n.x},${n.y})`}>
+          <rect x={-n.w / 2} y={-n.h / 2} width={n.w} height={n.h} rx={n.h / 2} />
+          <text dy="0.35em">{n.t}</text>
+        </g>
+      ))}
+    </svg>
+  </section>
+
+  <section class="features">
+    <div class="feature">
+      <h2>表で読む</h2>
+      <p>属性ごとに 1 行。空白ノードや同じ文書の中の資源は入れ子に、別の文書は ▸ でその場に開きます。名前は日本語を優先します。</p>
+    </div>
+    <div class="feature">
+      <h2>図で見る</h2>
+      <p>300 トリプルまでの表は、グラフ図にできます。ノードを動かし、押せばその資源へ。SVG で保存もできます。</p>
+    </div>
+    <div class="feature">
+      <h2>いろいろな形式</h2>
+      <p>Turtle・N-Triples・JSON-LD・RDF/XML に加え、HTML に埋め込まれた JSON-LD・microdata・RDFa も読みます。</p>
+    </div>
+  </section>
+
+  <section class="examples">
+    <h2>例から始める</h2>
+    <div class="cards">
+      {examples.map((e) => (
+        <a class="card" href={browse(e.uri)}>
+          <span class="kind">{e.kind}</span>
+          <strong>{e.title}</strong>
+          <span>{e.text}</span>
+          <code>{e.uri}</code>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="how">
+    <h2>しくみ</h2>
+    <ol>
+      <li><strong>読み替える</strong> URI から、RDF を取れる場所を決めます（Wikidata は Turtle の版、http は https に）。</li>
+      <li><strong>取りに行く</strong> ブラウザが相手のサーバへ直接取りに行きます。中継のサーバは置きません。</li>
+      <li><strong>表と図にする</strong> 名前を集めて、表と図にします。リンクを押すと次の資源へ進みます。</li>
+    </ol>
+    <p class="aside">中継のサーバを置かないので、使う人が増えても止まりません。そのかわり、別サイトからの読み込み（CORS）を許可していない相手は読めません。<a href={`${base}about/`}>くわしく</a></p>
+  </section>
+</Base>

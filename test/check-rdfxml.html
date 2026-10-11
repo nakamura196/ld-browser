@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>RDF/XML check</title>
+<!-- Parses each URL with public/app/rdfxml.js and prints a blank-node-free canonical form
+     (blank nodes as "_") so it can be diffed with rdflib: python3 test/rdflib-canon.py <file|url> -->
+<pre id="out"></pre>
+<script type="module">
+import { parseRdfXml } from '../public/app/rdfxml.js';
+const term = (t) => t.termType === 'BlankNode' ? '_' : t.termType === 'NamedNode' ? `<${t.value}>`
+  : JSON.stringify(t.value) + (t.language ? '@' + t.language : t.datatype && t.datatype.value !== 'http://www.w3.org/2001/XMLSchema#string' ? '^^<' + t.datatype.value + '>' : '');
+window.canon = async (url, base = url) => {
+  const res = await fetch(url, { headers: { Accept: 'application/rdf+xml' } });
+  const quads = parseRdfXml(await res.text(), base);
+  // A graph is a set: drop repeated triples (as the N3 Store does) before blanking the node ids.
+  const uniq = [...new Map(quads.map((q) => [[q.subject, q.predicate, q.object].map((t) => t.termType + t.value + (t.language || '') + (t.datatype ? t.datatype.value : '')).join(' '), q])).values()];
+  return { count: uniq.length, lines: uniq.map((q) => [q.subject, q.predicate, q.object].map(term).join(' ')).sort() };
+};
+document.getElementById('out').textContent = 'ready: canon(url, base)';
+</script>

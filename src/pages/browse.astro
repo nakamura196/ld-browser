@@ -1,0 +1,16 @@
+---
+import Base from "../layouts/Base.astro";
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+---
+<Base title="ブラウザ" current="browse">
+  <form id="form" slot="header" class="uriform">
+    <input id="u" name="u" type="url" placeholder="https://… の URI を入れる" autocomplete="off" required>
+    <button type="submit">見る</button>
+    <select id="lang" aria-label="ラベルの言語">
+      <option value="ja">日本語</option>
+      <option value="en">English</option>
+    </select>
+  </form>
+  <div id="out" data-home={base}></div>
+  <script is:inline type="module" src={`${base}app/main.js`}></script>
+</Base>
