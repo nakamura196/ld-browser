@@ -253,3 +253,11 @@ text/plain の平文、閉じていない JSON、MODS 風の XML、空の Turtle
 - 戻る: 頁内で資源をたどった後だけ「← 戻る」を出す（history.state に深さを持たせる）
 - フッターから RailClass へのリンクを外した。この道具は RailClass から独立させる（トップの例には RailClass を例の 1 つとして残す）
 - 手元のブラウザで確かめた: 戻る（たどる → 出る → 押す → 元に戻り消える）、言語リンクが `?u=` を引き継ぐ、明暗の切り替えと保存、英語版で Wikidata のラベルが英語になる
+
+## 2026-10-11 v2 その 3: 独自ドメイン browser.ldas.jp
+
+- 名前の検討: `ldas.jp` 本体は LDAS のサイト（Worker）で使用中なので不可。`ld.ldas.jp` は短いが何の頁か分からず、別用途に残したい。`browse.ldas.jp` は頁の `/browse/` と重なる（`browse.ldas.jp/browse/?u=`）。`viewer` は IIIF ビューアを連想させる。→ 道具の名前に合う `browser.ldas.jp`
+- DNS: Cloudflare の API で CNAME `browser` → `nakamura196.github.io`、プロキシ無し（GitHub が証明書を発行できるように）。鍵は 1Password「Cloudflare DNS edit ldas.jp」（ldas.jp の DNS 専用）
+- ldas.jp には `*.ldas.jp` → Cloudflare Tunnel の受け皿がある。名前を指定した CNAME を足せばそちらが優先される
+- Astro の `base` を `/` に、`site` を `https://browser.ldas.jp` に。`public/CNAME` を置き、`gh api -X PUT repos/.../pages -f cname=...` で登録
+- 旧 `nakamura196.github.io/ld-browser/` は GitHub が新しい住所へ転送する
