@@ -140,5 +140,5 @@ const en: typeof ja = {
 export const dict = { ja, en };
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
-// Site root for a language: "/ld-browser/" or "/ld-browser/en/".
+// Site root for a language: "/" or "/en/".
 export const root = (lang: Lang) => (lang === "en" ? `${base}en/` : base);

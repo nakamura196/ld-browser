@@ -16,13 +16,13 @@ npm ci
 npm run dev
 ```
 
-Then open http://localhost:4321/ld-browser/ . `npm run build` writes static files to `dist/`.
+Then open http://localhost:4321/ . `npm run build` writes static files to `dist/`.
 The pages (`src/pages/`, shared header and footer in `src/layouts/Base.astro`) are built by Astro;
 the browser scripts in `public/app/` are served unchanged.
 
 ## Publish
 
-The site is at https://nakamura196.github.io/ld-browser/ .
+The site is at https://browser.ldas.jp/ (custom domain, `public/CNAME`).
 `zsh scripts/deploy-pages.zsh` (on main) builds locally and force-pushes `dist/` to the `gh-pages` branch,
 which GitHub Pages serves. No Actions workflow is used.
 

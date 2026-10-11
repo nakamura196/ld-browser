@@ -3,9 +3,9 @@
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
-  site: "https://nakamura196.github.io",
-  // Provisional: the GitHub repository is not made yet (v2 in docs/notes/ld-browser.md).
-  base: "/ld-browser",
+  // Custom domain on GitHub Pages (public/CNAME); the site sits at the root.
+  site: "https://browser.ldas.jp",
+  base: "/",
   trailingSlash: "ignore",
   build: { inlineStylesheets: "never" },
   devToolbar: { enabled: false },
