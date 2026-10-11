@@ -232,3 +232,16 @@ text/plain の平文、閉じていない JSON、MODS 風の XML、空の Turtle
 - 時間切れ（20 秒）とオフラインは、実際に起こしていない
 - 転送の途中の段だけ許可が無い場合も、no-cors では「届いた」と出る。どの段で切れたかまでは、ブラウザからは分からない
 - JSON-LD の @context が取れないときの文（`context` を含むかで判定）は、実例で確かめていない
+
+## 2026-10-11 v2 その 1: GitHub Pages で公開
+
+- 公開先: https://nakamura196.github.io/ld-browser/ （リポジトリ nakamura196/ld-browser、public）
+- 手元でビルドし、`dist/` を gh-pages ブランチへ強制 push する（`scripts/deploy-pages.zsh`、RailClass と同じ形）。Actions は使わない
+- 返答に `Access-Control-Allow-Origin: *` が付くことを確かめた（他のサイトからこの頁の資源も読める）
+- 確かめた例: 旧 URI `train-bodies/rdf/class/Q696668`（直接開くと 404）を渡すと、`railclass/rdf/class/Q696668.ttl` に読み替えて 20 トリプルを表示。コンソールにエラーなし
+- 同時に入れたもの: Dependabot（npm、cooldown 付き）、Secret scanning と Push Protection、Dependabot alerts / security updates
+
+### 確かめていないこと
+
+- 公開版で、トップの他の例（3D モデル・Wikidata・SKOS・schema.org）は開いていない
+- RailClass の頁からの「LD Browser で見る」リンクはまだ無い（v2 の残り）
