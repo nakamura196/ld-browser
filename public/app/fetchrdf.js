@@ -5,6 +5,7 @@ import { Parser, Store } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 import { resolve, ACCEPT } from './resolve.js';
 import { parseRdfXml } from './rdfxml.js';
 import { extractHtml } from './html.js';
+import { t } from './i18n.js';
 
 const MAX_BYTES = 2 * 1024 * 1024; // larger documents (e.g. railclass all.ttl, 8 MB) are refused
 const cache = new Map(); // fetch url → Promise<Doc>
@@ -28,14 +29,11 @@ async function fetchDoc({ uri, url, dataset }) {
   const doc = { uri, url, dataset, store: new Store(), bytes: 0 };
   let parsed;
   try { parsed = new URL(url); } catch {
-    doc.error = fail('uri', 'URI の形が正しくありません',
-      '「https://」などで始まる、完全な URI ではないようです。', '前後の空白や、途中で切れていないかを確かめてください。');
+    doc.error = fail('uri', t('badUri'), t('badUriWhy'), t('badUriHint'));
     return doc;
   }
   if (!/^https?:$/.test(parsed.protocol)) {
-    doc.error = fail('scheme', `「${parsed.protocol}」の URI は取りに行けません`,
-      'この URI は名前として使われているもので、ウェブ上の置き場所を指していません（urn: や mailto: など）。',
-      'この資源を説明している別の文書（http(s) の URI）があれば、そちらを開いてください。');
+    doc.error = fail('scheme', t('schemeTitle', parsed.protocol), t('schemeWhy'), t('schemeHint'));
     return doc;
   }
 
@@ -50,18 +48,16 @@ async function fetchDoc({ uri, url, dataset }) {
     return doc;
   }
   clearTimeout(timer);
-  const facts = [['HTTP の状態', `${res.status} ${res.statusText}`.trim()]];
-  if (res.redirected && res.url && res.url !== url) facts.push(['転送後の取得先', res.url]);
+  const facts = [[t('factStatus'), `${res.status} ${res.statusText}`.trim()]];
+  if (res.redirected && res.url && res.url !== url) facts.push([t('factRedirect'), res.url]);
   if (!res.ok) {
     doc.error = httpFailure(res.status, facts);
     return doc;
   }
   const type = (res.headers.get('content-type') || '').split(';')[0].trim();
-  facts.push(['形式（Content-Type）', type || '（返ってきませんでした）']);
+  facts.push([t('factType'), type || t('typeNone')]);
   const len = Number(res.headers.get('content-length') || 0);
-  const tooBig = (n) => fail('size', `大きすぎるため読みません（${(n / 1048576).toFixed(1)} MB）`,
-    `この道具は、ブラウザが固まらないよう ${MAX_BYTES / 1048576} MB までの文書だけを読みます。`,
-    '資源ごとに分かれた小さな文書があれば、そちらを開いてください。', facts);
+  const tooBig = (n) => fail('size', t('tooBigTitle', (n / 1048576).toFixed(1)), t('tooBigWhy', MAX_BYTES / 1048576), t('tooBigHint'), facts);
   if (len > MAX_BYTES) { doc.error = tooBig(len); return doc; }
   const text = await res.text();
   doc.bytes = text.length;
@@ -76,9 +72,7 @@ async function fetchDoc({ uri, url, dataset }) {
     return doc;
   }
   if (!doc.store.size) {
-    doc.error = fail('empty', '読めましたが、中身が空でした',
-      `${FORMAT_NAMES[format]} として最後まで読めましたが、トリプルが 1 つもありませんでした。`,
-      '取得先を直接開いて、中身を確かめてください。', facts);
+    doc.error = fail('empty', t('emptyTitle'), t('emptyWhy', FORMAT_NAMES[format]), t('emptyHint'), facts);
   }
   return doc;
 }
@@ -106,11 +100,10 @@ function sniff(type, text) {
 // the server is there and only the permission is missing; if it fails too, the server was not reached.
 async function networkFailure(url, e) {
   if (e.name === 'AbortError') {
-    return fail('timeout', `${TIMEOUT_MS / 1000} 秒待っても返事がありませんでした`,
-      '相手のサーバが混んでいるか、止まっているようです。', '時間をおいて、もう一度開いてください。');
+    return fail('timeout', t('timeoutTitle', TIMEOUT_MS / 1000), t('timeoutWhy'), t('retryHint'));
   }
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-    return fail('offline', 'インターネットにつながっていません', 'この端末がオフラインです。', 'つながってから、もう一度開いてください。');
+    return fail('offline', t('offlineTitle'), t('offlineWhy'), t('offlineHint'));
   }
   let reached = false;
   try {
@@ -121,58 +114,49 @@ async function networkFailure(url, e) {
     reached = true;
   } catch { /* not reached either */ }
   if (reached) {
-    return fail('cors', '相手のサーバが、別のサイトからの読み込みを許可していません（CORS）',
-      'サーバには届きましたが、返事に「ほかのサイトの頁から読んでよい」という許可（Access-Control-Allow-Origin）が付いていませんでした。'
-      + '転送（リダイレクト）の途中の 1 段にだけ許可が無い場合も、こうなります。ブラウザだけで動くこの道具では読めません。',
-      '取得先を直接開けば中身は見られます。公開している側には、転送を含むすべての応答に許可を付けるよう頼むことができます。');
+    return fail('cors', t('corsTitle'), t('corsWhy'), t('corsHint'));
   }
-  return fail('network', 'サーバにつながりませんでした',
-    'ドメイン名が見つからない、証明書が正しくない、サーバが止まっている、のいずれかのようです。'
-    + 'http でしか公開していないサーバも、ここでは https で取りに行くため、つながりません。',
-    'URI の綴りを確かめてください。取得先をブラウザで直接開くと、原因が表示されることがあります。');
+  return fail('network', t('networkTitle'), t('networkWhy'), t('networkHint'));
 }
 
 function httpFailure(status, facts) {
-  const t = (title, why, hint) => fail('http', title, why, hint, facts);
-  if (status === 404) return t('文書が見つかりません（HTTP 404）', 'この取得先には、何も置かれていません。',
-    'URI の綴りを確かめてください。データの置き場所が変わった可能性もあります。');
-  if (status === 410) return t('文書は削除されています（HTTP 410）', '公開側が、この文書を取り下げたと答えています。', '');
-  if (status === 401 || status === 403) return t(`読む権限がありません（HTTP ${status}）`,
-    'ログインが必要か、公開側が読み込みを拒んでいます。', 'ブラウザで直接開けるかを確かめてください。');
-  if (status === 406) return t('求めた形式では返せない、と言われました（HTTP 406）',
-    'この道具は Turtle・JSON-LD・RDF/XML などを求めますが、相手はそのどれも返せないようです。', 'RDF を公開していない URI の可能性があります。');
-  if (status === 429) return t('短い間に読み込みすぎました（HTTP 429）', '相手のサーバが、しばらく待つよう求めています。', '時間をおいて、もう一度開いてください。');
-  if (status >= 500) return t(`相手のサーバで障害が起きています（HTTP ${status}）`, 'こちらではなく、公開側の問題です。', '時間をおいて、もう一度開いてください。');
-  return t(`読み込みに失敗しました（HTTP ${status}）`, '相手のサーバが、正常な応答を返しませんでした。', '');
+  const tf = (title, why, hint) => fail('http', title, why, hint, facts);
+  if (status === 404) return tf(t('http404'), t('http404Why'), t('http404Hint'));
+  if (status === 410) return tf(t('http410'), t('http410Why'), '');
+  if (status === 401 || status === 403) return tf(t('http403', status), t('http403Why'), t('http403Hint'));
+  if (status === 406) return tf(t('http406'), t('http406Why'), t('http406Hint'));
+  if (status === 429) return tf(t('http429'), t('http429Why'), t('retryHint'));
+  if (status >= 500) return tf(t('http5xx', status), t('http5xxWhy'), t('retryHint'));
+  return tf(t('httpOther', status), t('httpOtherWhy'), '');
 }
 
 // Parsers report in English with a line number; say what was tried, and show the line it stopped at.
 function parseFailure(e, format, type, text, facts) {
   const raw = String(e.message || e);
-  if (format !== 'xml') facts.push(['読み手の言葉', raw.slice(0, 300)]);
+  if (format !== 'xml') facts.push([t('factParser'), raw.slice(0, 300)]);
   const m = raw.match(/line (\d+)/i) || (e.context && e.context.line ? [null, e.context.line] : null);
   if (m) {
     const n = Number(m[1]);
     const line = text.split(/\r?\n/)[n - 1];
-    if (line !== undefined) facts.push([`${n} 行目`, line.trim().slice(0, 160) || '（空行）']);
+    if (line !== undefined) facts.push([t('factLine', n), line.trim().slice(0, 160) || t('emptyLine')]);
   }
   const fmt = FORMAT_NAMES[format] || format;
   const guessed = !type || !/turtle|n-triples|n-quads|trig|ld\+json|json|rdf\+xml|html/.test(type);
-  let why = `${fmt} として読もうとしましたが、途中で書き方の誤りに行き当たりました。`;
-  let hint = m ? '取得先を直接開き、上の行のあたりを確かめてください。' : '取得先を直接開いて、中身を確かめてください。';
+  let why = t('parseWhy', fmt);
+  let hint = m ? t('parseHintLine') : t('parseHint');
   if (format === 'xml') {
-    why = 'XML が返りましたが、RDF/XML ではありませんでした。';
-    hint = 'RDF ではない XML（目録の書式など）の可能性があります。';
+    why = t('xmlWhy');
+    hint = t('xmlHint');
   } else if (guessed) {
-    why = `相手は形式を「${type || '不明'}」と答えたため、${fmt} だと推し量って読もうとしましたが、読めませんでした。`;
-    hint = 'RDF ではない文書が返ってきた可能性があります。取得先を直接開いて、中身を確かめてください。';
+    why = t('guessedWhy', type || t('guessedUnknown'), fmt);
+    hint = t('guessedHint');
   } else if (format === 'jsonld' && /context/i.test(raw)) {
-    why = 'JSON-LD の中で使われている @context（語の対応表）を、取りに行けませんでした。';
-    hint = '@context の置き場所が、別のサイトからの読み込みを許可していない可能性があります。';
+    why = t('ctxWhy');
+    hint = t('ctxHint');
   } else if (format === 'jsonld' && e instanceof SyntaxError) {
-    why = 'JSON として正しく書かれていませんでした（括弧や引用符の閉じ忘れなど）。';
+    why = t('jsonWhy');
   }
-  return fail('parse', `${fmt} として読めませんでした`, why, hint, facts);
+  return fail('parse', t('parseTitle', fmt), why, hint, facts);
 }
 
 async function jsonLdQuads(json, baseIRI) {
@@ -198,10 +182,7 @@ async function parseInto(doc, text, format, baseIRI) {
     doc.embedded = got;
     if (!got.quads.length) {
       const err = new Error('no embedded RDF');
-      err.ldb = fail('html', 'RDF ではなく、HTML の頁が返りました',
-        '頁の中にも、埋め込まれた RDF（JSON-LD・microdata・RDFa）はありませんでした。',
-        '人が読むための頁だけを公開している URI のようです。頁の中に「RDF」「Turtle」「JSON-LD」などの別の版へのリンクがあれば、そちらを開いてください。',
-        got.errors.map((x) => ['読み手の言葉', x]));
+      err.ldb = fail('html', t('htmlTitle'), t('htmlWhy'), t('htmlHint'), got.errors.map((x) => [t('factParser'), x]));
       throw err;
     }
     store.addQuads(got.quads);

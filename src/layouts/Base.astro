@@ -1,46 +1,59 @@
 ---
-// Shared frame for every page: header (brand + navigation, optional slot for a form) and footer.
+// Shared frame for every page: header (brand + navigation, language and theme switches, optional slot for a form) and footer.
+import { dict, root, type Lang } from "../i18n";
 interface Props {
+  lang?: Lang;
   title?: string;
   description?: string;
   current?: "home" | "browse" | "about";
 }
-const { title, description = "URI を入れると、その Linked Data をブラウザだけで取りに行き、表とグラフにしてたどれます。", current } = Astro.props;
+const { lang = "ja", title, description, current } = Astro.props;
+const d = dict[lang];
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+const home = root(lang);
 const fullTitle = title ? `${title} — LD Browser` : "LD Browser";
-const nav = [
-  ["home", "", "ホーム"],
-  ["browse", "browse/", "ブラウザ"],
-  ["about", "about/", "このツールについて"],
-] as const;
+const paths = { home: "", browse: "browse/", about: "about/" } as const;
+const nav = (["home", "browse", "about"] as const).map((k) => [k, paths[k], d.nav[k]] as const);
+// The same page in the other language (the browse page adds ?u= in the browser).
+const other = root(lang === "en" ? "ja" : "en") + paths[current ?? "home"];
+// Set data-theme before the CSS paints: saved choice, else the OS setting.
+const themeScript = `try{var t=localStorage.getItem("ldb-theme")}catch(e){}if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t`;
 ---
+
 <!doctype html>
-<html lang="ja">
+<html lang={d.htmlLang}>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{fullTitle}</title>
-<meta name="description" content={description}>
+<meta name="description" content={description ?? d.description}>
 <meta property="og:title" content={fullTitle}>
-<meta property="og:description" content={description}>
+<meta property="og:description" content={description ?? d.description}>
+<script is:inline set:html={themeScript}></script>
 <link rel="icon" href={`${base}app/icon.svg`} type="image/svg+xml">
 <link rel="stylesheet" href={`${base}app/style.css`}>
 </head>
 <body>
 <header class="site">
   <div class="bar">
-    <a class="brand" href={base}>
+    <a class="brand" href={home}>
       <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
         <line x1="8" y1="10" x2="22" y2="7" /><line x1="8" y1="10" x2="16" y2="24" /><line x1="22" y1="7" x2="16" y2="24" />
         <circle cx="8" cy="10" r="4" /><circle cx="22" cy="7" r="3.2" /><circle cx="16" cy="24" r="4.4" />
       </svg>
       LD Browser
     </a>
-    <nav aria-label="サイト">
+    <nav aria-label={d.siteLabel}>
       {nav.map(([key, path, text]) => (
-        <a href={base + path} aria-current={current === key ? "page" : undefined}>{text}</a>
+        <a href={home + path} aria-current={current === key ? "page" : undefined}>{text}</a>
       ))}
     </nav>
+    <div class="switches">
+      <a id="langlink" class="langlink" href={other} data-href={other} hreflang={lang === "en" ? "ja" : "en"} lang={lang === "en" ? "ja" : "en"}>{d.otherLang}</a>
+      <button id="theme" type="button" class="themebtn" data-to-dark={d.theme.toDarkLabel} data-to-light={d.theme.toLightLabel} aria-label={d.theme.toDarkLabel}>
+        <span class="to-dark" aria-hidden="true">☾ {d.theme.toDark}</span><span class="to-light" aria-hidden="true">☀ {d.theme.toLight}</span>
+      </button>
+    </div>
   </div>
   <slot name="header" />
 </header>
@@ -48,9 +61,10 @@ const nav = [
   <slot />
 </main>
 <footer class="site">
-  <p>サーバを持たず、ブラウザが直接 RDF を取りに行きます。読めるのは、別サイトからの読み込み（CORS）を許可している相手だけです。</p>
-  <p>着想は神崎正英さんの <a href="https://web.archive.org/web/20250401124432/http://www.kanzaki.com/works/2014/pub/ld-browser">LD Browser</a>（2014）によります。別に作ったもので、神崎さんの道具ではありません。</p>
-  <p>作成: 中村 覚 ・ <a href="https://nakamura196.github.io/railclass/">RailClass</a></p>
+  <p>{d.footer.p1}</p>
+  <p set:html={d.footer.p2}></p>
+  <p>{d.footer.made}<a href="https://github.com/nakamura196/ld-browser">{d.footer.source}</a></p>
 </footer>
+<script is:inline src={`${base}app/theme.js`}></script>
 </body>
 </html>

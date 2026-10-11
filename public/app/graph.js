@@ -3,6 +3,7 @@
 // No library: a force layout (Fruchterman–Reingold) and plain SVG.
 
 import { sameResource } from './resolve.js';
+import { t } from './i18n.js';
 import { shorten, label, getLang } from './labels.js';
 
 const MAX_TRIPLES = 300;
@@ -48,18 +49,18 @@ export function graphToggle(subject, store, docUri) {
   bar.className = 'graphbar';
   if (!quads.length) return bar;
   if (quads.length > MAX_TRIPLES) {
-    bar.append(note(`グラフ図は ${MAX_TRIPLES} トリプルまでです（この表は ${quads.length}）`));
+    bar.append(note(t('graphTooBig', MAX_TRIPLES, quads.length)));
     return bar;
   }
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'graphbtn';
-  btn.textContent = `グラフ図（${quads.length} トリプル）`;
+  btn.textContent = t('graphBtn', quads.length);
   let box = null;
   btn.addEventListener('click', () => {
     if (box) { box.remove(); box = null; btn.setAttribute('aria-expanded', 'false'); return; }
     box = drawGraph(subject, quads);
-    if (skipped) box.append(note(`ほかの言語のラベル ${skipped} 件は省きました`));
+    if (skipped) box.append(note(t('graphSkipped', skipped)));
     bar.append(box);
     box.initView();
     btn.setAttribute('aria-expanded', 'true');
@@ -120,7 +121,7 @@ function clip(s, n) {
 // Rough width at 12px: full-width characters about 12px, others about 6.6px.
 function textWidth(s) {
   let w = 0;
-  for (const ch of s) w += /[　-鿿＀-￯]/.test(ch) ? 12 : 6.6;
+  for (const ch of s) w += /[\u3000-\u9fff\uff00-\uffef]/.test(ch) ? 12 : 6.6;
   return w;
 }
 
@@ -204,7 +205,7 @@ export function drawGraph(subject, quads) {
 
   const box = document.createElement('div');
   box.className = 'graph';
-  const root = svg('svg', { role: 'img', 'aria-label': `${quads.length} トリプルのグラフ図` });
+  const root = svg('svg', { role: 'img', 'aria-label': t('graphAria', quads.length) });
   const defs = svg('defs', {}, svg('marker', {
     id: 'ldb-arrow', viewBox: '0 0 10 10', refX: 10, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse',
   }, svg('path', { d: 'M0,0 L10,5 L0,10 z', class: 'arrowhead' })));
@@ -320,18 +321,18 @@ export function drawGraph(subject, quads) {
     b.addEventListener('click', fn);
     tools.append(b);
   };
-  tool('＋', '拡大', () => zoom(0.8));
-  tool('−', '縮小', () => zoom(1.25));
-  tool('全体', '全体を表示', () => { view = bounds(); setView(); });
-  tool('SVG', 'SVG で保存', () => saveSvg(root));
+  tool('＋', t('zoomIn'), () => zoom(0.8));
+  tool('−', t('zoomOut'), () => zoom(1.25));
+  tool(t('fitLabel'), t('fitTitle'), () => { view = bounds(); setView(); });
+  tool('SVG', t('saveSvg'), () => saveSvg(root));
   const hint = document.createElement('span');
   hint.className = 'status';
-  hint.textContent = '背景をドラッグで移動、ノードはドラッグで動かせます。押すとその資源を開きます。';
+  hint.textContent = t('graphHint');
   tools.append(hint);
 
   box.append(tools, root);
   // Once on the page: fit everything, unless that makes the text too small to read;
-  // then start around the subject at a readable size ("全体" still shows everything).
+  // then start around the subject at a readable size ("Fit" still shows everything).
   box.initView = () => {
     const px = root.clientWidth || 800, py = root.clientHeight || 500;
     const all = bounds();

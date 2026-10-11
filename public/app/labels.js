@@ -2,6 +2,7 @@
 // and short prefixed names as the fallback.
 
 import { wikidataId } from './resolve.js';
+import { LANG } from './i18n.js';
 
 export const PREFIXES = {
   rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
@@ -45,7 +46,7 @@ const LABEL_PREDICATES = [
   PREFIXES.dcterms + 'title',
 ];
 
-let lang = 'ja';
+let lang = LANG; // labels follow the page language
 export function setLang(l) { lang = l; }
 export function getLang() { return lang; }
 

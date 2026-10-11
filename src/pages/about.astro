@@ -1,26 +1,4 @@
 ---
-import Base from "../layouts/Base.astro";
+import About from "../components/About.astro";
 ---
-<Base title="このツールについて" current="about">
-  <article class="prose">
-    <h1>このツールについて</h1>
-    <p>LD Browser は、URI を入れると、その資源を説明する RDF をブラウザが直接取りに行き、表とグラフにする道具です。リンクを押すと、次の資源へたどれます。</p>
-
-    <h2>サーバを持たない</h2>
-    <p>取得も表示も、すべて見ている人のブラウザの中で行います。中継のサーバが無いので、使う人が増えてもどこかに負荷が集まりません。</p>
-    <p>そのかわり、読めるのは別サイトからの読み込み（CORS）を許可している相手だけです。許可していない相手は「読み込めませんでした」と出ます。転送（301・303）の途中に許可の無い段があるときも、同じく読めません。</p>
-
-    <h2>読める形式</h2>
-    <ul>
-      <li>Turtle、N-Triples、N-Quads、TriG、JSON-LD、RDF/XML</li>
-      <li>HTML の頁に埋め込まれた JSON-LD（<code>&lt;script type="application/ld+json"&gt;</code>）、microdata、RDFa</li>
-    </ul>
-    <p>2 MB を超える文書は読みません。</p>
-
-    <h2>読み替え</h2>
-    <p>Wikidata の URI は、軽い Turtle の版（<code>Special:EntityData/…​.ttl?flavor=simple</code>）を取りに行きます。<code>http://</code> の URI は <code>https://</code> に替えます。SKOS や Dublin Core のように転送の途中で許可が切れる語彙は、転送の終点を直接取りに行きます。</p>
-
-    <h2>着想</h2>
-    <p>神崎正英さんの <a href="https://web.archive.org/web/20250401124432/http://www.kanzaki.com/works/2014/pub/ld-browser">LD Browser</a>（2014）に学びました。神崎さんの版はサーバで取得する作りで、2026 年 10 月現在、アクセス過多のため止まっています。この道具はそれとは別に作ったもので、神崎さんの道具ではありません。</p>
-  </article>
-</Base>
+<About lang="ja" />

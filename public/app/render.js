@@ -7,6 +7,7 @@ import { load } from './fetchrdf.js';
 import { resolve, sameResource } from './resolve.js';
 import { shorten, label, harvest, getLang, PREFIXES } from './labels.js';
 import { graphToggle } from './graph.js';
+import { t } from './i18n.js';
 
 const RDF_TYPE = PREFIXES.rdf + 'type';
 const MD_ITEM = PREFIXES.md + 'item';
@@ -71,7 +72,7 @@ export function resourceTable(subject, store, ctx = { depth: 0, seen: new Set(),
 
   const table = h('table', { class: 'res' });
   if (!quads.length) {
-    table.append(h('tr', {}, h('td', { class: 'empty', colspan: 2 }, 'この文書には、この資源についての記述がありません。')));
+    table.append(h('tr', {}, h('td', { class: 'empty', colspan: 2 }, t('emptyDoc'))));
   }
   for (const p of preds) {
     const values = byPred.get(p).sort((a, b) => langRank(a) - langRank(b));
@@ -87,7 +88,7 @@ export function resourceTable(subject, store, ctx = { depth: 0, seen: new Set(),
       cell.append(h('button', {
         class: 'more',
         onclick: (e) => { cell.classList.add('open'); e.target.remove(); },
-      }, `ほか ${values.length - foldAfter} 件`));
+      }, t('more', values.length - foldAfter)));
     }
     table.append(h('tr', {},
       h('th', {}, uriLink(p)),
@@ -127,7 +128,7 @@ function valueNode(o, store, ctx) {
 
   const { dataset } = resolve(o.value);
   if (o.value.startsWith('http')) {
-    const btn = h('button', { class: 'expand', title: 'ここで開く' }, '▸');
+    const btn = h('button', { class: 'expand', title: t('openHere') }, '▸');
     btn.addEventListener('click', () => toggleExpand(wrap, btn, o, ctx));
     wrap.prepend(btn);
     if (dataset === 'railclass' && ctx.depth < settings.autoExpand && !isTypeLike(o.value)) toggleExpand(wrap, btn, o, ctx);
@@ -164,7 +165,7 @@ export function errorBox(doc, { withUrl = false } = {}) {
   const box = h('div', { class: 'errbox', role: 'alert' }, h('p', { class: 'errhead' }, e.title || e.message));
   if (e.why) box.append(h('p', { class: 'errwhy' }, e.why));
   if (e.hint) box.append(h('p', { class: 'errhint' }, e.hint));
-  const facts = [...(withUrl ? [['取得先', doc.url]] : []), ...(e.facts || [])];
+  const facts = [...(withUrl ? [[t('factUrl'), doc.url]] : []), ...(e.facts || [])];
   if (facts.length) {
     const dl = h('dl');
     for (const [k, v] of facts) {

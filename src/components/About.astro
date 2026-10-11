@@ -1,0 +1,20 @@
+---
+import Base from "../layouts/Base.astro";
+import { dict, type Lang } from "../i18n";
+const { lang } = Astro.props as { lang: Lang };
+const d = dict[lang];
+const a = d.about;
+---
+<Base lang={lang} title={d.titles.about} current="about">
+  <article class="prose">
+    <h1>{a.h1}</h1>
+    <p>{a.intro}</p>
+    {a.sections.map((s) => (
+      <>
+        <h2>{s.h}</h2>
+        {s.list && <ul>{s.list.map((li) => <li set:html={li}></li>)}</ul>}
+        {s.html.map((p) => <p set:html={p}></p>)}
+      </>
+    ))}
+  </article>
+</Base>

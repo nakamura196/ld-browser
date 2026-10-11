@@ -6,6 +6,8 @@
 
 import { DataFactory } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 
+import { t } from './i18n.js';
+
 const { namedNode, blankNode, literal, quad } = DataFactory;
 const RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 const XML = 'http://www.w3.org/XML/1998/namespace';
@@ -15,7 +17,7 @@ const SYNTAX_ATTRS = new Set(['about', 'ID', 'nodeID', 'resource', 'datatype', '
 export function parseRdfXml(text, baseIRI) {
   const dom = new DOMParser().parseFromString(text, 'application/xml');
   const err = dom.getElementsByTagName('parsererror')[0];
-  if (err) throw new Error('XML として読めませんでした: ' + err.textContent.trim().split('\n')[0]);
+  if (err) throw new Error(t('xmlParse') + err.textContent.trim().split('\n')[0]);
 
   const quads = [];
   const nodeIds = new Map(); // rdf:nodeID → blank node, so the same id is the same node

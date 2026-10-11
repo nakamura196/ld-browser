@@ -1,0 +1,111 @@
+---
+import Base from "../layouts/Base.astro";
+import { dict, root, type Lang } from "../i18n";
+const { lang } = Astro.props as { lang: Lang };
+const d = dict[lang];
+const h = d.home;
+const home = root(lang);
+const browse = (uri: string) => `${home}browse/?u=${encodeURIComponent(uri)}`;
+
+const uris = [
+  "https://nakamura196.github.io/train-bodies/rdf/class/Q696668",
+  "https://nakamura196.github.io/train-bodies/rdf/model/icet_411",
+  "http://www.wikidata.org/entity/Q696668",
+  "http://www.w3.org/2004/02/skos/core#prefLabel",
+  "https://schema.org/about",
+];
+const examples = h.examples.map((e, i) => ({ ...e, uri: uris[i] }));
+
+// Positions for the hero drawing (a small, fixed graph: it is an illustration, not data).
+const nodes = [
+  { id: "c", x: 250, y: 170, r: 34, t: "ICE T", main: true },
+  { id: "op", x: 100, y: 75, r: 26, t: h.nodes.op },
+  { id: "wd", x: 440, y: 70, r: 24, t: "Wikidata" },
+  { id: "m", x: 450, y: 265, r: 26, t: h.nodes.m },
+  { id: "g", x: 70, y: 260, r: 22, t: h.nodes.g },
+  { id: "l", x: 255, y: 325, r: 22, t: h.nodes.l },
+  { id: "co", x: 575, y: 185, r: 18, t: h.nodes.co },
+  { id: "w", x: 250, y: 28, r: 16, t: "Wikipedia" },
+];
+const edges = [["c", "op", h.edges.op], ["c", "wd", "sameAs"], ["m", "c", h.edges.m], ["c", "g", h.edges.g], ["c", "l", h.edges.l], ["m", "co", h.edges.co], ["c", "w", h.edges.w]];
+// Pills sized to the label (full-width characters ~13px, others ~7.5px at this size).
+for (const n of nodes) {
+  const w = [...n.t].reduce((a, ch) => a + (/[\u3000-\u9fff]/.test(ch) ? 13 : 7.5), 0) * (n.main ? 1.2 : 1);
+  n.w = w + (n.main ? 36 : 24);
+  n.h = n.main ? 40 : 28;
+}
+const at = Object.fromEntries(nodes.map((n) => [n.id, n]));
+// Where the line from a pill's centre towards (dx, dy) leaves the pill.
+const exit = (n, dx, dy) => Math.min(n.w / 2 / Math.abs(dx || 1e-9), n.h / 2 / Math.abs(dy || 1e-9));
+---
+<Base lang={lang} current="home">
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">{h.eyebrow}</p>
+      <h1>{h.h1[0]}<br><span class="nb">{h.h1[1]}<span class="accent">{h.h1[2]}</span>{h.h1[3]}</span>{h.h1[4] && <span class="nb">{h.h1[4]}</span>}</h1>
+      <p class="lead">{h.lead}</p>
+      <form class="uriform big" action={`${home}browse/`} method="get">
+        <input name="u" type="url" placeholder={d.form.placeholder} autocomplete="off" required aria-label={d.form.aria}>
+        <button type="submit">{d.form.button}</button>
+      </form>
+      <p class="try">{h.try}
+        {examples.slice(0, 3).map((e) => <a href={browse(e.uri)}>{e.title}</a>)}
+      </p>
+    </div>
+    <svg class="hero-graph" viewBox="0 0 620 360" role="img" aria-label={h.graphAria}>
+      <defs>
+        <marker id="h-arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" />
+        </marker>
+      </defs>
+      {edges.map(([a, b, t], i) => {
+        const s = at[a], o = at[b];
+        const dx = o.x - s.x, dy = o.y - s.y;
+        const ka = exit(s, dx, dy), kb = exit(o, dx, dy);
+        return (
+          <g class="h-edge" style={`--d:${i * 0.12}s`}>
+            <line x1={s.x + dx * ka} y1={s.y + dy * ka} x2={o.x - dx * kb * 1.04} y2={o.y - dy * kb * 1.04} marker-end="url(#h-arrow)" />
+            <text x={(s.x + o.x) / 2} y={(s.y + o.y) / 2 - 6}>{t}</text>
+          </g>
+        );
+      })}
+      {nodes.map((n, i) => (
+        <g class={`h-node${n.main ? " main" : ""}`} style={`--d:${0.3 + i * 0.08}s`} transform={`translate(${n.x},${n.y})`}>
+          <rect x={-n.w / 2} y={-n.h / 2} width={n.w} height={n.h} rx={n.h / 2} />
+          <text dy="0.35em">{n.t}</text>
+        </g>
+      ))}
+    </svg>
+  </section>
+
+  <section class="features">
+    {h.features.map(([title, text]) => (
+      <div class="feature">
+        <h2>{title}</h2>
+        <p>{text}</p>
+      </div>
+    ))}
+  </section>
+
+  <section class="examples">
+    <h2>{h.examplesH}</h2>
+    <div class="cards">
+      {examples.map((e) => (
+        <a class="card" href={browse(e.uri)}>
+          <span class="kind">{e.kind}</span>
+          <strong>{e.title}</strong>
+          <span>{e.text}</span>
+          <code>{e.uri}</code>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="how">
+    <h2>{h.howH}</h2>
+    <ol>
+      {h.how.map(([title, text]) => <li><strong>{title}</strong> {text}</li>)}
+    </ol>
+    <p class="aside">{h.aside}<a href={`${home}about/`}>{h.more}</a></p>
+  </section>
+</Base>

@@ -1,0 +1,15 @@
+---
+import Base from "../layouts/Base.astro";
+import { dict, root, type Lang } from "../i18n";
+const { lang } = Astro.props as { lang: Lang };
+const d = dict[lang];
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+---
+<Base lang={lang} title={d.titles.browse} current="browse">
+  <form id="form" slot="header" class="uriform">
+    <input id="u" name="u" type="url" placeholder={d.form.placeholder} autocomplete="off" required>
+    <button type="submit">{d.form.button}</button>
+  </form>
+  <div id="out" data-home={root(lang)}></div>
+  <script is:inline type="module" src={`${base}app/main.js`}></script>
+</Base>
