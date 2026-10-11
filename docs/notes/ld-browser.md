@@ -269,3 +269,9 @@ text/plain の平文、閉じていない JSON、MODS 風の XML、空の Turtle
 - 旧 `/browse/?u=…` は残し、`location.replace` で新しい形へ送る（静的サイトなので HTTP の転送は使えない）。ナビの「ブラウザ」は廃止
 - 見送った案: `/view/?u=`（重なりは消えるが 1 段深いまま）、何もしない（動くが、人目に触れる住所は短いほうがよい）
 - 手元で確かめた: 旧住所 → 新住所へ転送、リンクをたどる・戻る、例のカードから開く → 戻ると紹介に戻る、英語版の転送と言語リンクの `?u=` 引き継ぎ
+
+## 2026-10-11 v2 その 5: RailClass からのリンク
+
+- RailClass の形式・モデルの頁の URI の行に「LD Browser で見る」を足した（train-bodies 5e6ff4f、公開済み）。リンク先は `https://browser.ldas.jp/?u=<RDF の URI>`、英語の頁は `/en/?u=`
+- URI は RDF に書かれている旧 `train-bodies/` のまま渡す。LD Browser 側で読み替えて取得する。w3id へ切り替えたら両方の URI を差し替える
+- 画像（schema:image・foaf:thumbnail・foaf:depiction など）のサムネイル表示は、まだ無い。神崎版の describer.js（Wayback 2025-04-01 の控え）にも、画像を扱う処理は見当たらなかった（本体の別のスクリプトは未確認）
