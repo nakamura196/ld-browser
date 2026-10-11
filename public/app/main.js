@@ -11,13 +11,16 @@ const out = $('#out');
 const form = $('#form');
 const input = $('#u');
 
+const homeTitle = 'LD Browser';
 const MAX_LABEL_DOCS = 80; // RailClass documents fetched just to name links, per view
 
 async function show(uri) {
   input.value = uri || '';
   out.replaceChildren();
   syncLangLink();
-  if (!uri) return location.replace(out.dataset.home || '../'); // the top page has the examples
+  // The top page holds both views: the intro without ?u=, the resource with it.
+  document.documentElement.classList.toggle('viewing', !!uri);
+  if (!uri) { document.title = homeTitle; return; }
   document.title = `${shorten(uri)} — LD Browser`;
   if (depth() > 0) {
     const back = el('button', { type: 'button', class: 'backbtn' }, t('back'));

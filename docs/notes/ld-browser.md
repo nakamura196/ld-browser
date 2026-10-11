@@ -261,3 +261,11 @@ text/plain の平文、閉じていない JSON、MODS 風の XML、空の Turtle
 - ldas.jp には `*.ldas.jp` → Cloudflare Tunnel の受け皿がある。名前を指定した CNAME を足せばそちらが優先される
 - Astro の `base` を `/` に、`site` を `https://browser.ldas.jp` に。`public/CNAME` を置き、`gh api -X PUT repos/.../pages -f cname=...` で登録
 - 旧 `nakamura196.github.io/ld-browser/` は GitHub が新しい住所へ転送する
+
+## 2026-10-11 v2 その 4: 住所を `/?u=` に短くした
+
+- `browser.ldas.jp/browse/?u=…` は browser と browse が重なる。RailClass の頁にリンクを書き込む前に、`https://browser.ldas.jp/?u=<URI>`（英語は `/en/?u=`）に変えた
+- トップ頁が両方を持つ: `?u=` が無ければ紹介、あれば表。`<head>` の script で描画前に `html.viewing` を付け、CSS で出し分ける（ちらつかない）。頁内の行き来は従来どおり pushState
+- 旧 `/browse/?u=…` は残し、`location.replace` で新しい形へ送る（静的サイトなので HTTP の転送は使えない）。ナビの「ブラウザ」は廃止
+- 見送った案: `/view/?u=`（重なりは消えるが 1 段深いまま）、何もしない（動くが、人目に触れる住所は短いほうがよい）
+- 手元で確かめた: 旧住所 → 新住所へ転送、リンクをたどる・戻る、例のカードから開く → 戻ると紹介に戻る、英語版の転送と言語リンクの `?u=` 引き継ぎ

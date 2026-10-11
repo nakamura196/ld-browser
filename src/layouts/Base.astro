@@ -13,11 +13,11 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 const home = root(lang);
 const fullTitle = title ? `${title} — LD Browser` : "LD Browser";
 const paths = { home: "", browse: "browse/", about: "about/" } as const;
-const nav = (["home", "browse", "about"] as const).map((k) => [k, paths[k], d.nav[k]] as const);
-// The same page in the other language (the browse page adds ?u= in the browser).
+const nav = (["home", "about"] as const).map((k) => [k, paths[k], d.nav[k]] as const);
+// The same page in the other language (the top page adds ?u= in the browser).
 const other = root(lang === "en" ? "ja" : "en") + paths[current ?? "home"];
-// Set data-theme before the CSS paints: saved choice, else the OS setting.
-const themeScript = `try{var t=localStorage.getItem("ldb-theme")}catch(e){}if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t`;
+// Before the CSS paints: data-theme (saved choice, else the OS setting), and html.viewing when ?u= is given.
+const themeScript = `try{var t=localStorage.getItem("ldb-theme")}catch(e){}if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;if(/[?&]u=/.test(location.search))document.documentElement.classList.add("viewing")`;
 ---
 
 <!doctype html>

@@ -161,3 +161,6 @@ html[data-theme="dark"] .themebtn .to-dark, html:not([data-theme="dark"]) .theme
 .backbtn { margin: 10px 0 0; font-size: 13px; padding: 3px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--link); cursor: pointer; box-shadow: var(--shadow); }
 .backbtn:hover { background: var(--soft); border-color: var(--link); }
 html[lang="en"] .hero .nb { white-space: normal; }
+
+/* The top page: intro without ?u=, the resource view with it (html.viewing). */
+html.viewing .home-only, html:not(.viewing) .view-only { display: none; }

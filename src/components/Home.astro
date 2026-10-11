@@ -5,7 +5,9 @@ const { lang } = Astro.props as { lang: Lang };
 const d = dict[lang];
 const h = d.home;
 const home = root(lang);
-const browse = (uri: string) => `${home}browse/?u=${encodeURIComponent(uri)}`;
+// Relative links: main.js on this page opens them in place.
+const browse = (uri: string) => `?u=${encodeURIComponent(uri)}`;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 
 const uris = [
   "https://nakamura196.github.io/train-bodies/rdf/class/Q696668",
@@ -39,12 +41,19 @@ const at = Object.fromEntries(nodes.map((n) => [n.id, n]));
 const exit = (n, dx, dy) => Math.min(n.w / 2 / Math.abs(dx || 1e-9), n.h / 2 / Math.abs(dy || 1e-9));
 ---
 <Base lang={lang} current="home">
+  <!-- With ?u= the top page shows that resource (html.viewing, set in Base before paint) instead of the intro. -->
+  <form id="form" slot="header" class="uriform view-only">
+    <input id="u" name="u" type="url" placeholder={d.form.placeholder} autocomplete="off" required aria-label={d.form.aria}>
+    <button type="submit">{d.form.button}</button>
+  </form>
+  <div id="out" class="view-only" data-home={home}></div>
+  <div class="home-only">
   <section class="hero">
     <div class="hero-text">
       <p class="eyebrow">{h.eyebrow}</p>
       <h1>{h.h1[0]}<br><span class="nb">{h.h1[1]}<span class="accent">{h.h1[2]}</span>{h.h1[3]}</span>{h.h1[4] && <span class="nb">{h.h1[4]}</span>}</h1>
       <p class="lead">{h.lead}</p>
-      <form class="uriform big" action={`${home}browse/`} method="get">
+      <form class="uriform big" action={home} method="get">
         <input name="u" type="url" placeholder={d.form.placeholder} autocomplete="off" required aria-label={d.form.aria}>
         <button type="submit">{d.form.button}</button>
       </form>
@@ -108,4 +117,6 @@ const exit = (n, dx, dy) => Math.min(n.w / 2 / Math.abs(dx || 1e-9), n.h / 2 / M
     </ol>
     <p class="aside">{h.aside}<a href={`${home}about/`}>{h.more}</a></p>
   </section>
+  </div>
+  <script is:inline type="module" src={`${base}app/main.js`}></script>
 </Base>
