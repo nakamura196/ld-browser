@@ -20,6 +20,12 @@ Then open http://localhost:4321/ld-browser/ . `npm run build` writes static file
 The pages (`src/pages/`, shared header and footer in `src/layouts/Base.astro`) are built by Astro;
 the browser scripts in `public/app/` are served unchanged.
 
+## Publish
+
+The site is at https://nakamura196.github.io/ld-browser/ .
+`zsh scripts/deploy-pages.zsh` (on main) builds locally and force-pushes `dist/` to the `gh-pages` branch,
+which GitHub Pages serves. No Actions workflow is used.
+
 ## Files
 
 - `src/pages/index.astro` — top page; `browse.astro` — the browser; `about.astro` — about
