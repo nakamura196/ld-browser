@@ -39,6 +39,8 @@ const ja = {
       { kind: "語彙", title: "skos:prefLabel", text: "SKOS の定義。RDF/XML しか返さない語彙も読みます。" },
       { kind: "HTML", title: "schema.org の about", text: "HTML の頁から、埋め込まれた JSON-LD や microdata を取り出します。" },
     ],
+    videoH: "使い方の動画",
+    video: { id: "XNXKw03V55w", title: "LD Browser の使い方（5 分）" },
     howH: "しくみ",
     how: [
       ["読み替える", "URI から、RDF を取れる場所を決めます（Wikidata は Turtle の版、http は https に）。"],
@@ -106,6 +108,8 @@ const en: typeof ja = {
       { kind: "Vocabulary", title: "skos:prefLabel", text: "A SKOS definition. Vocabularies that only return RDF/XML are read too." },
       { kind: "HTML", title: "schema.org about", text: "Extracts the JSON-LD or microdata embedded in an HTML page." },
     ],
+    videoH: "Watch how it works",
+    video: { id: "gIjU2KkaxAE", title: "LD Browser usage video (4 min)" },
     howH: "How it works",
     how: [
       ["Rewrite", "Decide where the RDF can be fetched from the URI (a Turtle version for Wikidata, https for http)."],
