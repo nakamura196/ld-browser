@@ -4,7 +4,7 @@
 
 import { DataFactory } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 import { load } from './fetchrdf.js';
-import { resolve, sameResource } from './resolve.js';
+import { resolve, sameResource, imageUrl } from './resolve.js';
 import { shorten, label, harvest, getLang, PREFIXES } from './labels.js';
 import { graphToggle } from './graph.js';
 import { t } from './i18n.js';
@@ -12,6 +12,13 @@ import { t } from './i18n.js';
 const RDF_TYPE = PREFIXES.rdf + 'type';
 const MD_ITEM = PREFIXES.md + 'item';
 const FIRST_PROPS = [RDF_TYPE, PREFIXES.skos + 'prefLabel', PREFIXES.rdfs + 'label', 'http://schema.org/name'];
+// Properties whose values are pictures: shown as a small image beside the link.
+const IMAGE_PROPS = new Set([
+  'http://schema.org/image', 'https://schema.org/image',
+  'http://schema.org/thumbnailUrl', 'https://schema.org/thumbnailUrl',
+  PREFIXES.foaf + 'thumbnail', PREFIXES.foaf + 'depiction',
+  PREFIXES.wdt + 'P18', 'http://www.wikidata.org/prop/statement/P18',
+]);
 const FOLD_AFTER = 8; // show this many values, hide the rest behind a button
 const MAX_DEPTH = 4;
 
@@ -81,7 +88,9 @@ export function resourceTable(subject, store, ctx = { depth: 0, seen: new Set(),
     const foldAfter = preferred && preferred < values.length && values.every((o) => o.termType === 'Literal') ? preferred : FOLD_AFTER;
     const cell = h('td', { class: 'vals' });
     values.forEach((o, i) => {
-      const v = h('div', { class: 'val' + (i >= foldAfter ? ' folded' : '') }, valueNode(o, store, { ...ctx, seen }));
+      const v = h('div', { class: 'val' + (i >= foldAfter ? ' folded' : '') },
+        IMAGE_PROPS.has(p) ? thumb(o) : null,
+        valueNode(o, store, { ...ctx, seen }));
       cell.append(v);
     });
     if (values.length > foldAfter) {
@@ -96,6 +105,17 @@ export function resourceTable(subject, store, ctx = { depth: 0, seen: new Set(),
     ));
   }
   return table;
+}
+
+// A small picture for an image value. It links to the original; if it does not load, it disappears.
+function thumb(o) {
+  if (o.termType === 'BlankNode') return null;
+  const src = imageUrl(o.value);
+  if (!src) return null;
+  const img = h('img', { src, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer' });
+  const a = h('a', { class: 'thumb', href: imageUrl(o.value, 0), target: '_blank', rel: 'noopener' }, img);
+  img.addEventListener('error', () => a.remove());
+  return a;
 }
 
 // 0: chosen language, 1: English, 2: no language tag or not a literal, 3: other languages.

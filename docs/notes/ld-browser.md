@@ -275,3 +275,22 @@ text/plain の平文、閉じていない JSON、MODS 風の XML、空の Turtle
 - RailClass の形式・モデルの頁の URI の行に「LD Browser で見る」を足した（train-bodies 5e6ff4f、公開済み）。リンク先は `https://browser.ldas.jp/?u=<RDF の URI>`、英語の頁は `/en/?u=`
 - URI は RDF に書かれている旧 `train-bodies/` のまま渡す。LD Browser 側で読み替えて取得する。w3id へ切り替えたら両方の URI を差し替える
 - 画像（schema:image・foaf:thumbnail・foaf:depiction など）のサムネイル表示は、まだ無い。神崎版の describer.js（Wayback 2025-04-01 の控え）にも、画像を扱う処理は見当たらなかった（本体の別のスクリプトは未確認）
+
+## 2026-10-11 v2 その 6: 画像の値を小さな絵で見せる
+
+- 対象の項目: `schema:image`・`schema:thumbnailUrl`（http/https の両方）、`foaf:thumbnail`・`foaf:depiction`、Wikidata の P18（`wdt:P18` と `ps:P18`）
+- 値のセルで、リンクの上に縦 160px・横 240px までの絵を出す。絵を押すと元の画像を別タブで開く。読めない値（画像でない URL など）は絵だけ消え、リンクは残る（`public/app/render.js` の thumb、住所の読み替えは `resolve.js` の imageUrl）
+- Wikimedia Commons の `Special:FilePath/…` は `?width=320` を付けて縮小版を取る（元画像は数 MB あることが多い）
+- RailClass の RDF の画像の住所も旧 `train-bodies/` のままで、そのままでは 404。表示のときだけ `railclass/` に読み替える
+- 手元で確かめた（headless Chromium）: RailClass のモデル allegra（`schema:thumbnailUrl` → 560px の絵が読めた）、Wikidata Q696668 ICE T（P18 → Commons の 330px 版）。コンソールのエラーなし
+
+### RailClass の RDF にある画像の項目（2026-10-11 に数えた）
+
+- モデル 36 件: `schema:thumbnailUrl` あり（3D モデルの縮小画像）
+- 形式 28,650 件: 画像の項目は無い。サイトには写真 12,194 枚（出典つき）があるが、RDF には出していない
+- 上の 5 種のうち、使っているのは `schema:thumbnailUrl` だけ
+
+### 確かめていないこと
+
+- `schema:image` が ImageObject（空白ノード）のとき。今は絵を出さず、入れ子の表の中の `contentUrl` もリンクのまま
+- 公開版での表示（まだ配っていない）

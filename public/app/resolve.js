@@ -74,3 +74,15 @@ export function wikidataId(uri) {
 export function sameResource(a, b) {
   return resolve(a).uri === resolve(b).uri;
 }
+
+// Where to load an image value as a thumbnail, or null if it does not look like a web address.
+// Old RailClass addresses move to the current site; Wikimedia Commons files are asked for at a small width
+// (width 0: the original file).
+export function imageUrl(value, width = 320) {
+  if (!/^https?:\/\/\S+$/.test(value)) return null;
+  let url = value.replace(/^https:\/\/nakamura196\.github\.io\/train-bodies\//, RAILCLASS_PAGES + '/');
+  const commons = url.match(/^https?:\/\/commons\.wikimedia\.org\/wiki\/Special:FilePath\/([^?#]+)/);
+  if (commons) return `https://commons.wikimedia.org/wiki/Special:FilePath/${commons[1]}${width ? '?width=' + width : ''}`;
+  const local = /^http:\/\/(?:localhost|127\.0\.0\.1)[:/]/.test(url);
+  return local ? url : url.replace(/^http:/, 'https:');
+}
