@@ -1,0 +1,6 @@
+{
+  "pages": [
+    {"url": "https://browser.ldas.jp/", "out": "public/og-ja.jpg"},
+    {"url": "https://browser.ldas.jp/en/", "out": "public/og-en.jpg"}
+  ]
+}
