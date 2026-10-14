@@ -331,3 +331,12 @@ text/plain の平文、閉じていない JSON、MODS 風の XML、空の Turtle
 - 同日、名前の件を直した（`public/app/labels.js`）。接頭辞 `se:` を足し、se:title（事例名）と
   se:exTitle（実験名）を名前として読む。事例画面・実験画面・「この資源を指す記述」の 9 件とも、
   URI の前に名前が出ることを確かめた。属性名も `se:condition` のように短く出る。エラー 0。
+
+## 2026-10-13 sedb の語彙で属性名を日本語にする
+
+- sedb 側に語彙ファイル `https://low-carbon-k.github.io/sedb/assets/rdf/vocab.ttl`（116 トリプル、25 属性、日英の rdfs:label、CORS あり）が出たので読むようにした
+- `resolve.js` に規則を足した。`http(s)://www.teitanso.org/2012/04/se`（# 付きも）は vocab.ttl を読む。名前空間そのものは 404 のまま
+- `main.js`: これまで RailClass だけ語彙を読んでいた分岐を、データセットごとの語彙の表（`DATASET_VOCAB`）にした。sedb の資源を開くと、語彙も読んで属性名を取り込む。語彙が読めないときは今までどおり `se:condition` の形で出る
+- 「この資源を指す記述」の属性も、名前があれば名前で出すようにした（RailClass にも効く）
+- 確認（手元の dev サーバ + Playwright）: 事例「賃貸借契約」で 24 属性すべてに日本語名（「対応の結果 se:condition」など）、/en/ では英語名。実験画面の「この資源を指す記述」は「関連する社会実験」。`se:title` の URI を開くと vocab.ttl の記述が出る。sedb 由来のコンソールエラー 0
+- 限界: 属性の並び順は今も `se:` の短縮形の順（名前の順ではない）

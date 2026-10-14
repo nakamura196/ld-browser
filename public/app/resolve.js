@@ -31,6 +31,12 @@ const RULES = [
     match: /^https?:\/\/low-carbon\.k\.u-tokyo\.ac\.jp\/[^/#?]+$/,
     url: () => 'https://low-carbon-k.github.io/sedb/assets/rdf/data.ttl',
   },
+  // Its vocabulary (se:) no longer answers either; the site now carries a description of it.
+  {
+    dataset: 'sedb',
+    match: /^https?:\/\/www\.teitanso\.org\/2012\/04\/se(?:#.*)?$/,
+    url: () => 'https://low-carbon-k.github.io/sedb/assets/rdf/vocab.ttl',
+  },
   // Wikidata: entity, property-in-statement (wdt:/p:/ps: …) and page URLs all go to Special:EntityData.
   // flavor=simple keeps it small (truthy statements + labels), about 10 KB per item.
   {

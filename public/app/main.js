@@ -1,7 +1,7 @@
 import { DataFactory } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 import { load } from './fetchrdf.js';
 import { resolve, wikidataId, railclassClassUri } from './resolve.js';
-import { harvest, fetchWikidataLabels, shorten } from './labels.js';
+import { harvest, fetchWikidataLabels, shorten, label } from './labels.js';
 import { resourceTable, pickSubject, refreshLabels, browseHref, errorBox } from './render.js';
 import { graphToggle } from './graph.js';
 import { t } from './i18n.js';
@@ -13,6 +13,11 @@ const input = $('#u');
 
 const homeTitle = 'LD Browser';
 const MAX_LABEL_DOCS = 80; // RailClass documents fetched just to name links, per view
+// Vocabularies read for property names, per dataset.
+const DATASET_VOCAB = {
+  railclass: 'https://nakamura196.github.io/train-bodies/vocab',
+  sedb: 'http://www.teitanso.org/2012/04/se',
+};
 
 async function show(uri) {
   input.value = uri || '';
@@ -39,7 +44,11 @@ async function show(uri) {
     return;
   }
   harvest(doc.store);
-  if (doc.dataset === 'railclass') harvest((await load('https://nakamura196.github.io/train-bodies/vocab')).store);
+  const vocab = DATASET_VOCAB[doc.dataset];
+  if (vocab) {
+    const v = await load(vocab);
+    if (!v.error) harvest(v.store);
+  }
 
   const subject = pickSubject(doc, uri);
   out.append(await crossLinks(doc));
@@ -55,7 +64,7 @@ async function show(uri) {
   if (inbound.length) {
     const list = el('ul', { class: 'inbound' });
     for (const q of inbound.slice(0, 200)) {
-      list.append(el('li', {}, linkSpan(q.subject.value), ' ', el('span', { class: 'pred' }, shorten(q.predicate.value)), t('inboundThis')));
+      list.append(el('li', {}, linkSpan(q.subject.value), ' ', el('span', { class: 'pred' }, label(q.predicate.value) || shorten(q.predicate.value)), t('inboundThis')));
     }
     out.append(el('h3', {}, t('inboundHead', inbound.length)), list);
   }
