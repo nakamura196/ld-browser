@@ -24,6 +24,13 @@ const RULES = [
     match: /^https:\/\/w3id\.org\/railclass\/(Q\d+|[a-z][\w-]*)(?:#.*)?$/,
     url: (m) => `${RAILCLASS_PAGES}/rdf/class/${m[1]}.ttl`,
   },
+  // Social-experiment case database (sedb). The URIs keep the old project domain, which no longer answers;
+  // the whole dataset (750 triples) is one Turtle file on the static site, so every URI maps to it.
+  {
+    dataset: 'sedb',
+    match: /^https?:\/\/low-carbon\.k\.u-tokyo\.ac\.jp\/[^/#?]+$/,
+    url: () => 'https://low-carbon-k.github.io/sedb/assets/rdf/data.ttl',
+  },
   // Wikidata: entity, property-in-statement (wdt:/p:/ps: …) and page URLs all go to Special:EntityData.
   // flavor=simple keeps it small (truthy statements + labels), about 10 KB per item.
   {

@@ -316,3 +316,18 @@ text/plain の平文、閉じていない JSON、MODS 風の XML、空の Turtle
   2018「LOD フロントエンド」（LOD4ALL の可視化）、2021「MetaStanza」（SPARQL の結果を表・図の部品に）、
   2022「Linked Data API Navi」（SPARQL 窓口のカタログ）、2024「ttl2html」（Turtle から HTML のサイトを作る。サーバ側で事前に作る点が違う）
 - 主張の候補: LOD チャレンジ 15 回の受賞作に、任意の URI を開いてたどる汎用の LD ブラウザは無い（上の 15 回の受賞ページが根拠。応募作全体は見ていない）
+
+## 2026-10-13 sedb（社会実験事例データベース）の読み替え
+
+- `public/app/resolve.js` に規則を 1 つ足した。`http(s)://low-carbon.k.u-tokyo.ac.jp/<id>` は、
+  どれも `https://low-carbon-k.github.io/sedb/assets/rdf/data.ttl`（全 750 トリプル、39 KB、
+  `text/turtle`、CORS あり）を読む。元のドメインはもう応答しないので、URI は識別子としてだけ使う。
+- 確認（手元の dev サーバ + Playwright）: 事例「賃貸借契約」（…/059cc1cc…）を開くと se:exRdfName が
+  リンクになり、押すと社会実験「コミュニティ拠点(柏ビレジ)」（…/komyunitexikyoten）に移る。
+  移った先の「この資源を指す記述」に事例 9 件が出る（sedb の group 画面の 9 件と一致）。
+  同じファイルなので 2 回目の取得は起きない。コンソールのエラー 0。
+- 残り: 事例・実験の名前が URI のまま出る。se:title / se:exTitle は名前として扱っていない。
+  sedb の語彙ファイル（teitanso.org の se: 語彙）は、low-carbon-sedb の動画撮影が終わるまで触らない。
+- 同日、名前の件を直した（`public/app/labels.js`）。接頭辞 `se:` を足し、se:title（事例名）と
+  se:exTitle（実験名）を名前として読む。事例画面・実験画面・「この資源を指す記述」の 9 件とも、
+  URI の前に名前が出ることを確かめた。属性名も `se:condition` のように短く出る。エラー 0。

@@ -26,6 +26,8 @@ export const PREFIXES = {
   cls: 'https://nakamura196.github.io/train-bodies/rdf/class/',
   mdl: 'https://nakamura196.github.io/train-bodies/rdf/model/',
   rc: 'https://w3id.org/railclass/',
+  // Social-experiment case database (sedb).
+  se: 'http://www.teitanso.org/2012/04/se#',
 };
 
 export function shorten(uri) {
@@ -44,6 +46,9 @@ const LABEL_PREDICATES = [
   'https://schema.org/name',
   PREFIXES.foaf + 'name',
   PREFIXES.dcterms + 'title',
+  // sedb: case and experiment names.
+  PREFIXES.se + 'title',
+  PREFIXES.se + 'exTitle',
 ];
 
 let lang = LANG; // labels follow the page language
