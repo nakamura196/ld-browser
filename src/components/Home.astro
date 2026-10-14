@@ -95,6 +95,13 @@ const exit = (n, dx, dy) => Math.min(n.w / 2 / Math.abs(dx || 1e-9), n.h / 2 / M
     </div>
   </section>
 
+  <section class="news">
+    <h2>{h.newsH}</h2>
+    <ul>
+      {h.news.map(([date, text]) => <li><time datetime={date}>{date}</time><span>{text}</span></li>)}
+    </ul>
+  </section>
+
   <section class="features">
     {h.features.map(([title, text]) => (
       <div class="feature">

@@ -41,6 +41,14 @@ const ja = {
     ],
     videoH: "使い方の動画",
     video: { id: "XNXKw03V55w", title: "LD Browser の使い方（5 分）" },
+    newsH: "お知らせ",
+    news: [
+      ["2026-10-14", "社会実験事例データベース（sedb）の語彙を読み、属性名を日本語と英語で出すようにしました。"],
+      ["2026-10-13", "社会実験事例データベース（sedb）の URI を読めるようにしました。事例と実験の名前が出ます。"],
+      ["2026-10-11", "使い方の動画（日本語・英語）を公開しました。"],
+      ["2026-10-11", "画像の値を小さな絵で見せるようにしました。"],
+      ["2026-10-11", "browser.ldas.jp で公開しました。"],
+    ],
     howH: "しくみ",
     how: [
       ["読み替える", "URI から、RDF を取れる場所を決めます（Wikidata は Turtle の版、http は https に）。"],
@@ -110,6 +118,14 @@ const en: typeof ja = {
     ],
     videoH: "Watch how it works",
     video: { id: "gIjU2KkaxAE", title: "LD Browser usage video (4 min)" },
+    newsH: "News",
+    news: [
+      ["2026-10-14", "Reads the vocabulary of the social-experiment case database (sedb), so its property names show in Japanese and English."],
+      ["2026-10-13", "Reads the social-experiment case database (sedb) URIs and shows case and experiment names."],
+      ["2026-10-11", "Usage videos published (Japanese and English)."],
+      ["2026-10-11", "Image values are shown as small pictures."],
+      ["2026-10-11", "Published at browser.ldas.jp."],
+    ],
     howH: "How it works",
     how: [
       ["Rewrite", "Decide where the RDF can be fetched from the URI (a Turtle version for Wikidata, https for http)."],
