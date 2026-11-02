@@ -377,3 +377,10 @@ text/plain の平文、閉じていない JSON、MODS 風の XML、空の Turtle
 - DBpedia は保存されていないデータだと返事に 17〜30 秒かかる（19th_century で実測、2 回目 7 秒）。待ち時間の上限を 20 秒→45 秒にし、3 秒を超えたら経過秒数を出す。
 - 画像のファイルの URI（Commons の Special:FilePath、.jpg など）は RDF ではないので、エラーにせず画像を出す。
 - 実際の URI を開く自動テスト `test/live.html`（`zsh scripts/test-live.zsh`）を追加。住所の規則・画像の判定・RDF/XML の修復の 14 項目（通信なし）と、使用例 10 件＋過去に落ちた 5 件の読み込み。初回 15/15 成功、DBpedia は 2 件とも約 17 秒。
+
+## 2026-11-02 browser.ldas.jp から musubi.ldas.jp への転送
+
+- Cloudflare（ldas.jp）のリダイレクト ルールを 1 本作った。ワイルドカードの形で `https://browser.ldas.jp/*` → `https://musubi.ldas.jp/${1}`、301、クエリ文字列を保つ。browser の CNAME（行き先 github.io のまま）をプロキシ経由に切り替えた。転送が先に返るので GitHub には届かない
+- 旧と新でページの住所は同じ（/, /en/, /about/, /browse/）なので、パスはそのまま渡せば足りる
+- 確認: `/browse/?u=<Wikidata の URI>` が `?u=` ごと 301 で移り、最後は 200。http は先に https へ 301、そのあと musubi へ
+- 手元の Cloudflare の鍵には転送の決まりを書ける権限が無い（audit-tokens.zsh で 0 本）ので、ダッシュボードで作った
