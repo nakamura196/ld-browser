@@ -1,0 +1,34 @@
+---
+// The use-case list (data in src/usecases.ts). Each card opens its URI on the top page (?u=).
+import Base from "../layouts/Base.astro";
+import { dict, root, type Lang } from "../i18n";
+import { USE_CASES, FEATURES } from "../usecases";
+const { lang } = Astro.props as { lang: Lang };
+const d = dict[lang];
+const u = d.usecases;
+const home = root(lang);
+const list = [...USE_CASES].sort((a, b) => b.added.localeCompare(a.added));
+---
+<Base lang={lang} title={d.titles.usecases} description={u.intro} current="usecases">
+  <div class="uc-page">
+    <h1 class="section-h">{u.h1}</h1>
+    <p class="uc-intro">{u.intro}</p>
+    <ul class="uc-list">
+      {list.map((c) => (
+        <li class="uc" id={c.id}>
+          <span class="kind">{c.source[lang]}</span>
+          <h2>{c.title[lang]}</h2>
+          <p>{c.note[lang]}</p>
+          <ul class="tags">
+            {c.features.map((f) => <li class={f}>{FEATURES[f][lang]}</li>)}
+          </ul>
+          <code>{c.uri}</code>
+          <div class="actions">
+            <a class="open" href={`${home}?u=${encodeURIComponent(c.uri)}`}>{u.open}</a>
+            {c.site && <a href={c.site}>{u.site}</a>}
+          </div>
+        </li>
+      ))}
+    </ul>
+  </div>
+</Base>

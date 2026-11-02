@@ -1,13 +1,14 @@
-# LD Browser
+# Musubi
 
-A browser-only Linked Data browser. Enter a URI; the page fetches its RDF directly from the browser,
+Musubi (結び, "tying together"; formerly LD Browser) is a browser-only Linked Data browser. Enter a URI; the page fetches its RDF directly from the browser,
 shows it as tables, and lets you follow the links. There is no server: only sources that allow
 cross-origin reads (CORS) can be loaded.
 
-The first target is [RailClass](https://nakamura196.github.io/railclass/) and Wikidata.
+It shares its look with [Kasane](https://kasane.ldas.jp/) (IIIF) and [Awase](https://awase.ldas.jp/) (TEI) through the
+shared design CSS of [nakamura196/react-ui](https://github.com/nakamura196/react-ui) (`static.css`, pinned tag).
+Examples of what it can open are on the use-case page (`src/usecases.ts`).
 
 Inspired by Masahide Kanzaki's [LD Browser](https://web.archive.org/web/20250401124432/http://www.kanzaki.com/works/2014/pub/ld-browser) (2014).
-This is a separate implementation, not his tool.
 
 ## Run locally
 
@@ -22,15 +23,15 @@ the browser scripts in `public/app/` are served unchanged.
 
 ## Publish
 
-The site is at https://browser.ldas.jp/ (custom domain, `public/CNAME`).
+The site is at https://musubi.ldas.jp/ (custom domain, `public/CNAME`).
 `zsh scripts/deploy-pages.zsh` (on main) builds locally and force-pushes `dist/` to the `gh-pages` branch,
 which GitHub Pages serves. No Actions workflow is used.
 
 ## Files
 
-- `src/pages/index.astro` — top page; `browse.astro` — the browser; `about.astro` — about
+- `src/pages/index.astro` — top page; `usecases.astro` — use cases (data: `src/usecases.ts`); `about.astro` — about; `browse.astro` — old address, forwards to the top
 
-- `public/app/resolve.js` — URI → where to fetch its RDF (RailClass, Wikidata, a few vocabularies)
+- `public/app/resolve.js` — URI → where to fetch its RDF (RailClass, sedb, Wikidata, DBpedia, a few vocabularies)
 - `public/app/fetchrdf.js` — fetch and parse (Turtle, N-Triples, JSON-LD, RDF/XML, HTML)
 - `public/app/rdfxml.js` — RDF/XML parser on the browser's own DOMParser
 - `public/app/labels.js` — names for URIs (ja / en)

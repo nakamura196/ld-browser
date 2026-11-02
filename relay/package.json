@@ -1,0 +1,5 @@
+{
+  "name": "ldas-relay",
+  "private": true,
+  "type": "module"
+}

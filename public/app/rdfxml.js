@@ -14,7 +14,24 @@ const XML = 'http://www.w3.org/XML/1998/namespace';
 // rdf: names that are syntax, not properties, when they appear as attributes.
 const SYNTAX_ATTRS = new Set(['about', 'ID', 'nodeID', 'resource', 'datatype', 'parseType', 'aboutEach', 'aboutEachPrefix', 'bagID']);
 
+// Some publishers (VIAF) write a character outside the basic plane as two numeric references, one per
+// UTF-16 half (&#55357;&#56832;). XML forbids those numbers, so the whole document fails to parse.
+// Join each pair back into the character it stands for, and replace a half that has no partner with U+FFFD (the replacement character).
+function fixSurrogateRefs(text) {
+  return text
+    .replace(/&#(?:x([dD][89abAB][0-9a-fA-F]{2})|(5[5-6]\d{3}));&#(?:x([dD][c-fC-F][0-9a-fA-F]{2})|(5[6-7]\d{3}));/g, (all, hh, hd, lh, ld) => {
+      const hi = hh ? parseInt(hh, 16) : Number(hd);
+      const lo = lh ? parseInt(lh, 16) : Number(ld);
+      return hi >= 0xd800 && hi <= 0xdbff && lo >= 0xdc00 && lo <= 0xdfff ? String.fromCharCode(hi, lo) : all;
+    })
+    .replace(/&#(?:x[dD][89a-fA-F][0-9a-fA-F]{2}|5[5-7]\d{3});/g, (ref) => {
+      const n = /^&#x/i.test(ref) ? parseInt(ref.slice(3), 16) : Number(ref.slice(2, -1));
+      return n >= 0xd800 && n <= 0xdfff ? '\uFFFD' : ref;
+    });
+}
+
 export function parseRdfXml(text, baseIRI) {
+  if (text.includes('&#')) text = fixSurrogateRefs(text);
   const dom = new DOMParser().parseFromString(text, 'application/xml');
   const err = dom.getElementsByTagName('parsererror')[0];
   if (err) throw new Error(t('xmlParse') + err.textContent.trim().split('\n')[0]);

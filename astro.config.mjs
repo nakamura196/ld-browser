@@ -4,7 +4,7 @@ import { defineConfig } from "astro/config";
 
 export default defineConfig({
   // Custom domain on GitHub Pages (public/CNAME); the site sits at the root.
-  site: "https://browser.ldas.jp",
+  site: "https://musubi.ldas.jp",
   base: "/",
   trailingSlash: "ignore",
   build: { inlineStylesheets: "never" },

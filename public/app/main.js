@@ -1,6 +1,6 @@
 import { DataFactory } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 import { load } from './fetchrdf.js';
-import { resolve, wikidataId, railclassClassUri } from './resolve.js';
+import { resolve, wikidataId, railclassClassUri, imageUrl, isImageFile } from './resolve.js';
 import { harvest, fetchWikidataLabels, shorten, label } from './labels.js';
 import { resourceTable, pickSubject, refreshLabels, browseHref, errorBox } from './render.js';
 import { graphToggle } from './graph.js';
@@ -11,7 +11,7 @@ const out = $('#out');
 const form = $('#form');
 const input = $('#u');
 
-const homeTitle = 'LD Browser';
+const homeTitle = 'Musubi';
 const MAX_LABEL_DOCS = 80; // RailClass documents fetched just to name links, per view
 // Vocabularies read for property names, per dataset.
 const DATASET_VOCAB = {
@@ -26,16 +26,34 @@ async function show(uri) {
   // The top page holds both views: the intro without ?u=, the resource with it.
   document.documentElement.classList.toggle('viewing', !!uri);
   if (!uri) { document.title = homeTitle; return; }
-  document.title = `${shorten(uri)} — LD Browser`;
+  document.title = `${shorten(uri)} — Musubi`;
   if (depth() > 0) {
     const back = el('button', { type: 'button', class: 'backbtn' }, t('back'));
     back.addEventListener('click', () => history.back());
     out.append(back);
   }
 
+  // An image file (a Wikimedia Commons file path, a .jpg …) is not RDF: show the picture instead of an error.
+  if (isImageFile(uri)) {
+    const src = imageUrl(uri, 1280);
+    out.append(
+      el('p', { class: 'status' }, t('imageFile')),
+      el('h2', {}, el('a', { class: 'lab', href: uri, target: '_blank', rel: 'noopener' }, uri)),
+      el('p', {}, el('a', { href: uri, target: '_blank', rel: 'noopener' }, el('img', { class: 'imagefile', src, alt: '', loading: 'lazy' }))),
+    );
+    return;
+  }
+
   const status = el('p', { class: 'status' }, t('loading'));
   out.append(status);
+  // A slow source can take half a minute; show that we are still waiting, and for how long.
+  const started = Date.now();
+  const tick = setInterval(() => {
+    const s = Math.round((Date.now() - started) / 1000);
+    if (s >= 3) status.textContent = t('loadingSlow', s);
+  }, 1000);
   const doc = await load(uri);
+  clearInterval(tick);
   status.remove();
 
   out.append(sourceLine(doc));
@@ -107,6 +125,7 @@ function sourceLine(doc) {
   const parts = [t('sourceLabel'), el('a', { href: doc.url, target: '_blank', rel: 'noopener' }, doc.url)];
   if (!doc.error) parts.push(t('sourceStats', doc.store.size, (doc.bytes / 1024).toFixed(1)));
   if (doc.url !== doc.uri.replace(/#.*$/, '')) parts.push(el('span', { class: 'note' }, t('rewritten')));
+  if (doc.relayed) parts.push(el('span', { class: 'note' }, t('relayed')));
   if (doc.embedded?.quads.length) {
     const names = { jsonld: 'JSON-LD', microdata: 'microdata', rdfa: 'RDFa' };
     const got = Object.entries(doc.embedded.counts).filter(([, n]) => n).map(([k, n]) => `${names[k]} ${n}`).join(t('listSep'));

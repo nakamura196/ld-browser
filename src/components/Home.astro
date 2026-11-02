@@ -10,26 +10,28 @@ const browse = (uri: string) => `?u=${encodeURIComponent(uri)}`;
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 
 const uris = [
-  "https://nakamura196.github.io/train-bodies/rdf/class/Q696668",
-  "https://nakamura196.github.io/train-bodies/rdf/model/icet_411",
-  "http://www.wikidata.org/entity/Q696668",
+  "https://jpsearch.go.jp/data/cobas-52087",
+  "https://jpsearch.go.jp/entity/chname/葛飾北斎",
+  "http://www.wikidata.org/entity/Q5586",
   "http://www.w3.org/2004/02/skos/core#prefLabel",
   "https://schema.org/about",
 ];
 const examples = h.examples.map((e, i) => ({ ...e, uri: uris[i] }));
 
 // Positions for the hero drawing (a small, fixed graph: it is an illustration, not data).
+// It follows the first example: a Japan Search record of the Great Wave, its artist, and the artist elsewhere.
 const nodes = [
-  { id: "c", x: 250, y: 170, r: 34, t: "ICE T", main: true },
-  { id: "op", x: 100, y: 75, r: 26, t: h.nodes.op },
-  { id: "wd", x: 440, y: 70, r: 24, t: "Wikidata" },
-  { id: "m", x: 450, y: 265, r: 26, t: h.nodes.m },
-  { id: "g", x: 70, y: 260, r: 22, t: h.nodes.g },
-  { id: "l", x: 255, y: 325, r: 22, t: h.nodes.l },
-  { id: "co", x: 575, y: 185, r: 18, t: h.nodes.co },
-  { id: "w", x: 250, y: 28, r: 16, t: "Wikipedia" },
+  { id: "c", x: 210, y: 175, t: h.nodes.main, main: true },
+  { id: "a", x: 420, y: 95, t: h.nodes.a },
+  { id: "p", x: 110, y: 50, t: h.nodes.p },
+  { id: "t", x: 80, y: 290, t: h.nodes.t },
+  { id: "k", x: 270, y: 320, t: h.nodes.k },
+  { id: "i", x: 40, y: 175, t: h.nodes.i },
+  { id: "wd", x: 560, y: 30, t: "Wikidata" },
+  { id: "db", x: 575, y: 165, t: "DBpedia" },
+  { id: "vf", x: 500, y: 270, t: "VIAF" },
 ];
-const edges = [["c", "op", h.edges.op], ["c", "wd", "sameAs"], ["m", "c", h.edges.m], ["c", "g", h.edges.g], ["c", "l", h.edges.l], ["m", "co", h.edges.co], ["c", "w", h.edges.w]];
+const edges = [["c", "a", h.edges.a], ["c", "p", h.edges.p], ["c", "t", h.edges.t], ["c", "k", h.edges.k], ["c", "i", h.edges.i], ["a", "wd", h.edges.same], ["a", "db", h.edges.same], ["a", "vf", h.edges.same]];
 // Pills sized to the label (full-width characters ~13px, others ~7.5px at this size).
 for (const n of nodes) {
   const w = [...n.t].reduce((a, ch) => a + (/[\u3000-\u9fff]/.test(ch) ? 13 : 7.5), 0) * (n.main ? 1.2 : 1);
@@ -123,6 +125,7 @@ const exit = (n, dx, dy) => Math.min(n.w / 2 / Math.abs(dx || 1e-9), n.h / 2 / M
         </a>
       ))}
     </div>
+    <p class="more-link"><a href={`${home}usecases/`}>{h.usecasesMore} →</a></p>
   </section>
 
   <section class="how">

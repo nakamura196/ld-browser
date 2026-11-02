@@ -1,0 +1,129 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Musubi live tests</title>
+<!--
+  Opens real URIs with the app's own code (public/app/*.js) and checks what comes back.
+  Two parts:
+    1. Offline: the address rules (resolve.js), image detection, and the RDF/XML repairs. No network.
+    2. Live: each URI in CASES is fetched as the page would (direct, or through the relay when CORS blocks it).
+       These depend on the sources being up; a failure here can be the source's side (see the "why" column).
+  Run: from the repository root, start a static server and open this page:
+    python3 -m http.server 8765
+    open http://localhost:8765/test/live.html
+  (The relay accepts requests from any localhost port.) window.results holds the outcome for scripts.
+-->
+<style>
+  body { font: 14px system-ui, sans-serif; margin: 1rem; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ccc; padding: 3px 6px; text-align: left; vertical-align: top; }
+  .pass { background: #e8f6ea; } .fail { background: #fbe7e7; } .run { color: #888; }
+  code { font-size: 12px; word-break: break-all; }
+</style>
+<h1>Musubi live tests</h1>
+<p id="sum">running…</p>
+<h2>Offline</h2>
+<table id="offline"><tr><th>check</th><th>result</th></tr></table>
+<h2>Live</h2>
+<table id="live"><tr><th>id</th><th>URI</th><th>expect</th><th>got</th><th>time</th><th>why</th></tr></table>
+<script type="module">
+import { load } from '../public/app/fetchrdf.js';
+import { resolve, isImageFile, relayable } from '../public/app/resolve.js';
+import { parseRdfXml } from '../public/app/rdfxml.js';
+
+// --- Offline checks: [name, () => true | string (what went wrong)]
+const eq = (a, b) => a === b || `got ${JSON.stringify(a)}, expected ${JSON.stringify(b)}`;
+const OFFLINE = [
+  ['DBpedia resource → Turtle file', () => eq(resolve('https://dbpedia.org/resource/Hokusai').url, 'https://dbpedia.org/data/Hokusai.ttl')],
+  ['DBpedia page → canonical resource', () => eq(resolve('https://dbpedia.org/page/Hokusai').uri, 'http://dbpedia.org/resource/Hokusai')],
+  ['GeoNames place → about.rdf', () => eq(resolve('http://sws.geonames.org/1850147/').url, 'https://sws.geonames.org/1850147/about.rdf')],
+  ['VIAF http → https, RDF/XML asked', () => { const r = resolve('http://viaf.org/viaf/69033717'); return eq(r.url + ' ' + r.accept, 'https://viaf.org/viaf/69033717 application/rdf+xml'); }],
+  ['FOAF term → vocabulary file', () => eq(resolve('http://xmlns.com/foaf/0.1/Person').url, 'https://xmlns.com/foaf/spec/index.rdf')],
+  ['FOAF goes through the relay', () => eq(relayable('https://xmlns.com/foaf/spec/index.rdf'), true)],
+  ['DBpedia does not use the relay', () => eq(relayable('https://dbpedia.org/data/Hokusai.ttl'), false)],
+  ['RailClass w3id → current site', () => eq(resolve('https://w3id.org/railclass/Q696668').url, 'https://railclass.ldas.jp/rdf/class/Q696668.ttl')],
+  ['Unknown http URI is fetched over https', () => eq(resolve('http://example.org/a#b').url, 'https://example.org/a')],
+  ['Commons file path is an image', () => eq(isImageFile('http://commons.wikimedia.org/wiki/Special:FilePath/SuezCanalKantara.jpg'), true)],
+  ['A .png is an image', () => eq(isImageFile('https://example.org/x.PNG?w=1'), true)],
+  ['A data URI is not an image', () => eq(isImageFile('http://www.wikidata.org/entity/Q5586'), false)],
+  ['RDF/XML: split character references are joined (VIAF)', () => {
+    const q = parseRdfXml('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:s="http://schema.org/"><rdf:Description rdf:about="http://x/a"><s:name>葛飾&#55362;&#57247;北齋</s:name></rdf:Description></rdf:RDF>', 'http://x/');
+    return eq(q[0] && q[0].object.value, '葛飾\u{20B9F}北齋');
+  }],
+  ['RDF/XML: a lone half becomes U+FFFD', () => {
+    const q = parseRdfXml('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:s="http://schema.org/"><rdf:Description rdf:about="http://x/a"><s:name>a&#xD800;b</s:name></rdf:Description></rdf:RDF>', 'http://x/');
+    return eq(q[0] && q[0].object.value, 'a�b');
+  }],
+];
+
+// --- Live cases. min: at least this many triples. relayed: true / false / undefined (either).
+// subject: the URI that must have statements in the document (defaults to the resolved canonical URI).
+const CASES = [
+  // Use cases (src/usecases.ts)
+  { id: 'jps-great-wave', uri: 'https://jpsearch.go.jp/data/cobas-52087', min: 30, relayed: false },
+  { id: 'jps-hokusai', uri: 'https://jpsearch.go.jp/entity/chname/葛飾北斎', min: 20, relayed: false },
+  { id: 'dbpedia-hokusai', uri: 'http://dbpedia.org/resource/Hokusai', min: 300, relayed: false },
+  { id: 'loc-hokusai', uri: 'http://id.loc.gov/authorities/names/n80043599', min: 300, relayed: false },
+  { id: 'geonames-tokyo', uri: 'https://sws.geonames.org/1850147/', min: 50, relayed: false },
+  { id: 'sedb-case', uri: 'http://low-carbon.k.u-tokyo.ac.jp/059cc1cca31ac7400e89b9d80ec880cb', min: 500, relayed: false },
+  { id: 'railclass-ice-t', uri: 'https://w3id.org/railclass/Q696668', min: 10, relayed: false },
+  { id: 'skos-preflabel', uri: 'http://www.w3.org/2004/02/skos/core#prefLabel', min: 100, relayed: false },
+  { id: 'schema-about', uri: 'https://schema.org/about', min: 10, relayed: false },
+  { id: 'ndl-relay', uri: 'http://id.ndl.go.jp/auth/entity/00270331', min: 30, relayed: true },
+  // Cases that once failed (2026-11-02)
+  { id: 'wikidata-hokusai', uri: 'http://www.wikidata.org/entity/Q5586', min: 50, relayed: false },
+  { id: 'viaf-hokusai', note: 'http→https without CORS; Turtle gives 403; split character references', uri: 'http://viaf.org/viaf/69033717', min: 1000, relayed: false },
+  { id: 'foaf-person', note: 'vocabulary file has no CORS → relay', uri: 'http://xmlns.com/foaf/0.1/Person', min: 500, relayed: true },
+  { id: 'dbpedia-19th-century', note: 'slow source: 17–30 s on a cold request', uri: 'http://dbpedia.org/resource/19th_century', min: 100, relayed: false },
+  { id: 'dcterms-creator', uri: 'http://purl.org/dc/terms/creator', min: 50, relayed: false },
+];
+
+const off = document.getElementById('offline');
+let offFail = 0;
+for (const [name, fn] of OFFLINE) {
+  let r; try { r = fn(); } catch (e) { r = String(e); }
+  if (r !== true) offFail++;
+  off.insertAdjacentHTML('beforeend', `<tr class="${r === true ? 'pass' : 'fail'}"><td>${name}</td><td>${r === true ? 'ok' : r}</td></tr>`);
+}
+
+const live = document.getElementById('live');
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+const rows = CASES.map((c) => {
+  const tr = document.createElement('tr');
+  tr.className = 'run';
+  tr.innerHTML = `<td>${c.id}</td><td><code>${esc(c.uri)}</code>${c.note ? '<br><small>' + esc(c.note) + '</small>' : ''}</td><td>≥ ${c.min}${c.relayed === true ? ', relay' : c.relayed === false ? ', direct' : ''}</td><td>…</td><td></td><td></td>`;
+  live.append(tr);
+  return tr;
+});
+
+// Run a few at a time: the sources are shared public services.
+const results = [];
+let next = 0;
+async function worker() {
+  while (next < CASES.length) {
+    const i = next++;
+    const c = CASES[i];
+    const t0 = performance.now();
+    const doc = await load(c.uri);
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    const n = doc.store ? doc.store.size : 0;
+    const subject = c.subject || resolve(c.uri).uri;
+    const hasSubject = doc.store && doc.store.getQuads(subject, null, null, null).length > 0;
+    const problems = [];
+    if (doc.error) problems.push(`${doc.error.kind}: ${doc.error.title}`);
+    if (n < c.min) problems.push(`only ${n} triples`);
+    if (c.relayed !== undefined && !!doc.relayed !== c.relayed) problems.push(doc.relayed ? 'went through the relay' : 'did not use the relay');
+    if (!doc.error && !hasSubject) problems.push(`no statements about ${subject}`);
+    const ok = problems.length === 0;
+    results[i] = { id: c.id, ok, triples: n, relayed: !!doc.relayed, secs: Number(secs), problems };
+    rows[i].className = ok ? 'pass' : 'fail';
+    rows[i].cells[3].textContent = `${n} triples${doc.relayed ? ', relay' : ''}`;
+    rows[i].cells[4].textContent = `${secs} s`;
+    rows[i].cells[5].textContent = problems.join('; ');
+  }
+}
+await Promise.all([worker(), worker(), worker()]);
+const liveFail = results.filter((r) => !r.ok).length;
+window.results = { offline: { total: OFFLINE.length, failed: offFail }, live: results };
+document.getElementById('sum').textContent = `offline ${OFFLINE.length - offFail}/${OFFLINE.length} ok, live ${results.length - liveFail}/${results.length} ok`;
+document.title = (offFail + liveFail ? 'FAIL' : 'PASS') + ' — Musubi live tests';
+</script>

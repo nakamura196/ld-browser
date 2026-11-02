@@ -345,3 +345,35 @@ text/plain の平文、閉じていない JSON、MODS 風の XML、空の Turtle
 
 - 動画のすぐ下に「お知らせ／News」を置いた。日付と 1 行の文、新しい順。文言は `src/i18n.ts` の `home.news`（日英）。
 - 目に見える変更を公開したときに 1 行足す。最初の 5 件は 10-11 の公開から 10-14 の sedb 語彙まで。
+
+## 2026-11-02 Musubi に改名、共有デザインへ、見本の差し替え（musubi ブランチ、未公開）
+
+- 名前を Musubi（結び）に。Kasane（IIIF）・Awase（TEI）と並べる。住所は musubi.ldas.jp（`public/CNAME`、`astro.config.mjs`）
+- 見た目: react-ui の static.css（v0.5.0、jsDelivr）を先に読み、ヘッダー・フッターを ds-header / ds-footer に。手本は TEI ポータルの Base.astro。表とグラフの CSS は、色の変数（`--bg` など）を `--ds-*` につなぎ直しただけで中身は変えていない。ダークは static.css が `html.dark` を見るので、data-theme と同時に class も付ける
+- 「鉄道の見本が使えない」の原因: データは消えておらず、RailClass は railclass.ldas.jp に移っていた。旧 GitHub Pages の 301 に CORS の許可が無く、そこで止まっていた。`RAILCLASS_PAGES` を新しい住所にして直った（ICE T で 21 トリプル）
+- 読めなかった相手の原因を実測（公開中のサイトから fetch）:
+  - DBpedia: https の URI が http の data/*.ttl へ 303 → https の頁から行けない。`https://dbpedia.org/data/<名>.ttl` を直接取る規則を足した（Hokusai で 824 トリプル）。ja.dbpedia.org は 502
+  - GeoNames: 場所の URI の 303 に許可が無い。`/<id>/about.rdf` を直接取る規則を足した（東京で 104 トリプル）
+  - VIAF: 刷新後、旧 URI は HTML の頁へ転送。RDF も許可も無い → 読めない
+  - NDL 典拠（id.ndl.go.jp）: RDF/XML は返すが CORS の許可が無い → 読めない（中継を置かない限り）
+  - Getty vocab・DNB も許可なし
+- 見本の軸はジャパンサーチの「冨嶽三十六景・神奈川沖浪裏」（cobas-52087、東博、CC BY）。作者→葛飾北斎→Wikidata・DBpedia・VIAF・NDL への sameAs、画像、時代、所蔵館がそろう
+- ユースケースのページ（`src/usecases.ts`、/usecases/）を 10 件で作った。手元のビルドで 10 件を `load()` し、8 件が読め、NDL（読めない例として載せた）以外の失敗は GeoNames の 1 件で、上の規則で解消
+- 却下: 全体の SSR 化（神崎版と同じく負荷でサーバが止まる心配）。読めない相手だけの中継（Cloudflare Worker、相手を一覧で限定）は本人の判断待ち
+
+## 2026-11-02 許可の無い相手だけ中継する（Vercel）
+
+- 本人の判断: Cloudflare は本番が載っていて、無料枠（Workers はアカウント共有）を使い切ると本番まで止まるので避ける。Vercel のものは止まってもよい → 中継は Vercel に置く
+- `relay/api/fetch.js`（Vercel Function、依存なし）。`GET /api/fetch?url=`。相手は一覧（id.ndl.go.jp・vocab.getty.edu・d-nb.info）だけ、転送も一覧の中だけ、データの形式（RDF・JSON・XML）だけ、2 MB まで、ldas.jp と localhost の頁からだけ。返事は Vercel の CDN に 1 日置く。Kasane・Awase からも使えるよう、名前は ldas relay にした
+- 公開先: https://relay-eight-nu.vercel.app/api/fetch（Vercel のプロジェクト名は relay）。relay.ldas.jp にするには Cloudflare の DNS に 1 行要る（未）
+- Musubi 側: 直接の取得が CORS で断られ、相手が一覧に入っているときだけ中継に頼む（`fetchrdf.js` の viaRelay）。画面に「中継を通して取得しました」
+- 実測: NDL 典拠の北斎が 69 トリプルで読めた（手元のビルド→公開中の中継）。Getty は 9 秒で打ち切り（相手が遅い）、DNB は 429（相手の回数制限）。どちらも相手側の事情で、中継の不具合ではない
+- VIAF は中継しても読めない見込み（旧 URI が HTML の頁に転送され、RDF を返さない）
+
+- VIAF（`http://viaf.org/viaf/69033717`）が読めなかった原因は CORS ではなかった。(1) http→https の 301 に CORS の許可が無い。(2) Turtle を第一に求めると 403 の HTML が返る（RDF/XML を求めれば 200、CORS の許可あり）。(3) 返ってくる RDF/XML が、基本面の外の漢字を UTF-16 の半分ずつの数値参照（`&#56128;&#56577;`）で書いており、XML として不正で全体が読めない。読み替えの規則（https・RDF/XML 指定）と、読む前に対を 1 文字に戻す処理で 1661 トリプル読めた。中継は不要。
+- FOAF（`http://xmlns.com/foaf/0.1/Person`）: 語の URI は HTML の仕様書へ 303、語彙全体の RDF/XML（`https://xmlns.com/foaf/spec/index.rdf`）には CORS の許可が無い → 読み替え＋中継の相手に xmlns.com を追加。620 トリプル。
+- 中継の相手を一覧で絞る理由: Origin の確認はブラウザの中でしか効かず、コマンドからは任意の名乗りで送れる（実際に musubi.ldas.jp を名乗って通った）。相手を開放すると誰でも使える中継になり、苦情で Vercel のアカウントごと止まるおそれ。本人了承。
+- DBpedia は CORS の許可に頼んできたサイト名をそのまま返し、30 日の保存を許すのに「サイトごとに違う」の印（Vary: Origin）を付けない。別の住所で見たことのあるブラウザでは、保存された答えの許可が合わず CORS で落ちる（テストで再現: localhost:4392 で見た後に localhost:8765 から）。CORS で落ちたら保存を使わず 1 回取り直すようにした。browser.ldas.jp → musubi.ldas.jp の移行でも起きうる。
+- DBpedia は保存されていないデータだと返事に 17〜30 秒かかる（19th_century で実測、2 回目 7 秒）。待ち時間の上限を 20 秒→45 秒にし、3 秒を超えたら経過秒数を出す。
+- 画像のファイルの URI（Commons の Special:FilePath、.jpg など）は RDF ではないので、エラーにせず画像を出す。
+- 実際の URI を開く自動テスト `test/live.html`（`zsh scripts/test-live.zsh`）を追加。住所の規則・画像の判定・RDF/XML の修復の 14 項目（通信なし）と、使用例 10 件＋過去に落ちた 5 件の読み込み。初回 15/15 成功、DBpedia は 2 件とも約 17 秒。

@@ -2,7 +2,7 @@
 // One request per document; results are cached for the page's lifetime.
 
 import { Parser, Store } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
-import { resolve, ACCEPT } from './resolve.js';
+import { resolve, ACCEPT, RELAY_URL, relayable } from './resolve.js';
 import { parseRdfXml } from './rdfxml.js';
 import { extractHtml } from './html.js';
 import { t } from './i18n.js';
@@ -17,7 +17,8 @@ export function load(uri) {
   return cache.get(r.url);
 }
 
-const TIMEOUT_MS = 20000;
+// Some sources answer slowly when the data is not in their cache (DBpedia: 17–30 s on a first request).
+const TIMEOUT_MS = 45000;
 
 // Why a document could not be read. title: one line; why: what happened; hint: what the reader can do;
 // facts: [label, value] pairs for the record (status, content type, the parser's own words).
@@ -25,7 +26,7 @@ function fail(kind, title, why, hint, facts = []) {
   return { kind, message: title, title, why, hint, facts };
 }
 
-async function fetchDoc({ uri, url, dataset }) {
+async function fetchDoc({ uri, url, dataset, accept = ACCEPT }) {
   const doc = { uri, url, dataset, store: new Store(), bytes: 0 };
   let parsed;
   try { parsed = new URL(url); } catch {
@@ -41,15 +42,29 @@ async function fetchDoc({ uri, url, dataset }) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   try {
-    res = await fetch(url, { headers: { Accept: ACCEPT }, signal: ctl.signal });
+    try {
+      res = await fetch(url, { headers: { Accept: accept }, signal: ctl.signal });
+    } catch (e) {
+      if (ctl.signal.aborted) throw e;
+      // Some sources (DBpedia) echo the requesting site in their CORS header, let the browser keep the answer
+      // for 30 days, and do not mark it as varying by site. A copy kept from another site (browser.ldas.jp,
+      // a local test server) then fails the CORS check. Ask once more, bypassing the browser's cache.
+      res = await fetch(url, { headers: { Accept: accept }, signal: ctl.signal, cache: 'reload' });
+    }
   } catch (e) {
     clearTimeout(timer);
-    doc.error = await networkFailure(url, e);
-    return doc;
+    const why = await networkFailure(url, e);
+    // No CORS permission: for the hosts the relay serves, ask the relay instead.
+    res = why.kind === 'cors' && relayable(url) ? await viaRelay(url) : null;
+    if (!res) { doc.error = why; return doc; }
+    doc.relayed = true;
   }
   clearTimeout(timer);
+  // Where the document finally came from (after redirects; the relay reports it in a header).
+  const finalUrl = (doc.relayed ? res.headers.get('x-final-url') : res.url) || url;
   const facts = [[t('factStatus'), `${res.status} ${res.statusText}`.trim()]];
-  if (res.redirected && res.url && res.url !== url) facts.push([t('factRedirect'), res.url]);
+  if (doc.relayed) facts.push([t('factRelay'), RELAY_URL]);
+  if (finalUrl !== url) facts.push([t('factRedirect'), finalUrl]);
   if (!res.ok) {
     doc.error = httpFailure(res.status, facts);
     return doc;
@@ -65,7 +80,7 @@ async function fetchDoc({ uri, url, dataset }) {
   doc.contentType = type;
   const format = sniff(type, text);
   try {
-    await parseInto(doc, text, format, res.url || url);
+    await parseInto(doc, text, format, finalUrl);
   } catch (e) {
     if (e.ldb) e.ldb.facts = [...facts, ...e.ldb.facts];
     doc.error = e.ldb || parseFailure(e, format, type, text, facts);
@@ -94,6 +109,20 @@ function sniff(type, text) {
   if (/^[{[]/.test(head)) return 'jsonld';
   if (/^<\?xml|^<rdf:RDF/.test(head)) return /<rdf:RDF|rdf-syntax-ns#/.test(text) ? 'rdfxml' : 'xml';
   return 'Turtle';
+}
+
+// Ask the relay for a document the browser may not read directly. null if the relay cannot be reached
+// (it may also be stopped once its free quota runs out); the caller then reports the CORS failure.
+async function viaRelay(url) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
+  try {
+    return await fetch(`${RELAY_URL}?url=${encodeURIComponent(url)}`, { headers: { Accept: ACCEPT }, signal: ctl.signal });
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // fetch() hides why a request failed. Ask again in no-cors mode: if that gets an (opaque) answer,

@@ -5,6 +5,8 @@ export const LANG = document.documentElement.lang === 'en' ? 'en' : 'ja';
 
 const ja = {
   loading: '読み込み中…',
+  imageFile: 'この URI は画像のファイルで、データ（RDF）ではありません。画像をそのまま表示します。',
+  loadingSlow: (s) => `読み込み中…（${s} 秒）相手のサーバの返事を待っています。混んでいると 30 秒ほどかかることがあります`,
   back: '← 戻る',
   noSubject: (n) => `取得した文書（${n} トリプル）に、この URI を主語とする記述はありませんでした。下の「ほかの資源」を見てください。`,
   inboundThis: ' → この資源',
@@ -16,6 +18,7 @@ const ja = {
   sourceLabel: '取得先: ',
   sourceStats: (n, kb) => `（${n} トリプル、${kb} KB）`,
   rewritten: ' この URI は読み替えて取得しています',
+  relayed: ' 相手が別サイトからの読み込みを許可していないため、中継を通して取得しました',
   embedded: (got) => ` HTML の頁から、埋め込まれたデータを取り出しました（${got} トリプル）`,
   listSep: '、',
   // render.js
@@ -43,6 +46,7 @@ const ja = {
   schemeHint: 'この資源を説明している別の文書（http(s) の URI）があれば、そちらを開いてください。',
   factStatus: 'HTTP の状態',
   factRedirect: '転送後の取得先',
+  factRelay: '中継',
   factType: '形式（Content-Type）',
   typeNone: '（返ってきませんでした）',
   tooBigTitle: (mb) => `大きすぎるため読みません（${mb} MB）`,
@@ -106,6 +110,8 @@ const ja = {
 
 const en = {
   loading: 'Loading…',
+  imageFile: 'This URI is an image file, not data (RDF). The image is shown as it is.',
+  loadingSlow: (s) => `Loading… (${s} s) Waiting for the source's server; a busy one can take about 30 seconds.`,
   back: '← Back',
   noSubject: (n) => `The fetched document (${n} triples) has no statements about this URI. See "Other resources" below.`,
   inboundThis: ' → this resource',
@@ -117,6 +123,7 @@ const en = {
   sourceLabel: 'Source: ',
   sourceStats: (n, kb) => ` (${n} triples, ${kb} KB)`,
   rewritten: ' This URI was rewritten before fetching.',
+  relayed: ' The source does not allow cross-origin reads, so this was fetched through the relay.',
   embedded: (got) => ` Data embedded in the HTML page was extracted (${got} triples).`,
   listSep: ', ',
   emptyDoc: 'This document has no statements about this resource.',
@@ -141,6 +148,7 @@ const en = {
   schemeHint: 'If another document (an http(s) URI) describes this resource, open that instead.',
   factStatus: 'HTTP status',
   factRedirect: 'Final URL after redirects',
+  factRelay: 'Relay',
   factType: 'Format (Content-Type)',
   typeNone: '(none returned)',
   tooBigTitle: (mb) => `Too large to read (${mb} MB)`,

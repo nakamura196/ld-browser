@@ -5,22 +5,25 @@ interface Props {
   lang?: Lang;
   title?: string;
   description?: string;
-  current?: "home" | "browse" | "about";
+  current?: "home" | "browse" | "usecases" | "about";
 }
 const { lang = "ja", title, description, current } = Astro.props;
 const d = dict[lang];
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 const home = root(lang);
-const fullTitle = title ? `${title} — LD Browser` : "LD Browser";
-const paths = { home: "", browse: "browse/", about: "about/" } as const;
-const nav = (["home", "about"] as const).map((k) => [k, paths[k], d.nav[k]] as const);
+const fullTitle = title ? `${title} — Musubi` : "Musubi";
+const paths = { home: "", browse: "browse/", usecases: "usecases/", about: "about/" } as const;
+const nav = (["home", "usecases", "about"] as const).map((k) => [k, paths[k], d.nav[k]] as const);
 // The same page in the other language (the top page adds ?u= in the browser).
 const other = root(lang === "en" ? "ja" : "en") + paths[current ?? "home"];
-// Before the CSS paints: data-theme (saved choice, else the OS setting), and html.viewing when ?u= is given.
+// Before the CSS paints: data-theme plus the class the shared design reads (html.dark / html.light; saved choice, else the OS setting),
+// and html.viewing when ?u= is given.
 // Share image per language, made by ~/git/tools/og-image from og-image.json (public/og-ja.jpg, og-en.jpg).
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogImage = new URL(`${base}og-${lang}.jpg`, Astro.site).href;
-const themeScript = `try{var t=localStorage.getItem("ldb-theme")}catch(e){}if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";document.documentElement.dataset.theme=t;if(/[?&]u=/.test(location.search))document.documentElement.classList.add("viewing")`;
+const themeScript = `try{var t=localStorage.getItem("ldb-theme")}catch(e){}if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";var r=document.documentElement;r.dataset.theme=t;r.classList.add(t);if(/[?&]u=/.test(location.search))r.classList.add("viewing")`;
+// Shared design of Kasane / Awase / the TEI portal (nakamura196/react-ui, pinned tag). Our own CSS comes after it.
+const designCss = "https://cdn.jsdelivr.net/gh/nakamura196/react-ui@v0.5.0/src/styles/static.css";
 ---
 
 <!doctype html>
@@ -32,39 +35,36 @@ const themeScript = `try{var t=localStorage.getItem("ldb-theme")}catch(e){}if(t!
 <meta name="description" content={description ?? d.description}>
 <meta property="og:title" content={fullTitle}>
 <meta property="og:description" content={description ?? d.description}>
-<meta property="og:site_name" content="LD Browser">
+<meta property="og:site_name" content="Musubi">
 <meta property="og:type" content="website">
 <meta property="og:url" content={canonical}>
 <meta property="og:locale" content={lang === "en" ? "en_US" : "ja_JP"}>
 <meta property="og:image" content={ogImage}>
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content={`LD Browser — ${d.description}`}>
+<meta property="og:image:alt" content={`Musubi — ${d.description}`}>
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href={canonical}>
 <script is:inline set:html={themeScript}></script>
 <link rel="icon" href={`${base}app/icon.svg`} type="image/svg+xml">
+<link rel="stylesheet" href={designCss}>
 <link rel="stylesheet" href={`${base}app/style.css`}>
 </head>
 <body>
-<header class="site">
-  <div class="bar">
-    <a class="brand" href={home}>
-      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
-        <line x1="8" y1="10" x2="22" y2="7" /><line x1="8" y1="10" x2="16" y2="24" /><line x1="22" y1="7" x2="16" y2="24" />
-        <circle cx="8" cy="10" r="4" /><circle cx="22" cy="7" r="3.2" /><circle cx="16" cy="24" r="4.4" />
-      </svg>
-      LD Browser
-    </a>
-    <nav aria-label={d.siteLabel}>
-      {nav.map(([key, path, text]) => (
-        <a href={home + path} aria-current={current === key ? "page" : undefined}>{text}</a>
-      ))}
-    </nav>
-    <div class="switches">
-      <a id="langlink" class="langlink" href={other} data-href={other} hreflang={lang === "en" ? "ja" : "en"} lang={lang === "en" ? "ja" : "en"}>{d.otherLang}</a>
-      <button id="theme" type="button" class="themebtn" data-to-dark={d.theme.toDarkLabel} data-to-light={d.theme.toLightLabel} aria-label={d.theme.toDarkLabel}>
-        <span class="to-dark" aria-hidden="true">☾ {d.theme.toDark}</span><span class="to-light" aria-hidden="true">☀ {d.theme.toLight}</span>
+<div class="page">
+<header class="ds-header site">
+  <div class="ds-header__inner">
+    <a class="ds-header__brand brand" href={home}>Musubi</a>
+    <div class="ds-header__actions">
+      <nav class="ds-header__nav" aria-label={d.siteLabel}>
+        {nav.map(([key, path, text]) => (
+          <a class="ds-header__nav-link" href={home + path} aria-current={current === key ? "page" : undefined}>{text}</a>
+        ))}
+      </nav>
+      <a id="langlink" class="icon-btn lang-btn" href={other} data-href={other} hreflang={lang === "en" ? "ja" : "en"} lang={lang === "en" ? "ja" : "en"} title={d.otherLang}>{lang === "en" ? "日本語" : "EN"}</a>
+      <button id="theme" type="button" class="icon-btn" data-to-dark={d.theme.toDarkLabel} data-to-light={d.theme.toLightLabel} aria-label={d.theme.toDarkLabel} title={d.theme.toDarkLabel}>
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></svg>
       </button>
     </div>
   </div>
@@ -73,11 +73,32 @@ const themeScript = `try{var t=localStorage.getItem("ldb-theme")}catch(e){}if(t!
 <main id="main" class={current === "home" ? "home" : undefined}>
   <slot />
 </main>
-<footer class="site">
-  <p>{d.footer.p1}</p>
-  <p set:html={d.footer.p2}></p>
-  <p>{d.footer.made}<a href="https://github.com/nakamura196/ld-browser">{d.footer.source}</a></p>
+<footer class="ds-footer">
+  <div class="ds-footer__inner">
+    <div class="ds-footer__grid">
+      <div class="footer-about">
+        <p class="ds-footer__brand">Musubi</p>
+        <p class="ds-footer__brand-desc">{d.footer.p1}</p>
+        <p class="ds-footer__brand-desc" set:html={d.footer.p2}></p>
+      </div>
+      <div class="ds-footer__col">
+        <h2 class="ds-footer__heading">{d.footer.guideH}</h2>
+        <ul class="ds-footer__list">
+          {nav.map(([, path, text]) => <li><a class="ds-footer__link" href={home + path}>{text}</a></li>)}
+          <li><a class="ds-footer__link" href="https://github.com/nakamura196/ld-browser">{d.footer.source}</a></li>
+        </ul>
+      </div>
+      <div class="ds-footer__col">
+        <h2 class="ds-footer__heading">{d.footer.relatedH}</h2>
+        <ul class="ds-footer__list">
+          {d.footer.related.map(([name, text, href]) => <li><a class="ds-footer__link" href={href}>{name}</a><span class="footer-note">{text}</span></li>)}
+        </ul>
+      </div>
+    </div>
+    <div class="ds-footer__copyright">© {new Date().getFullYear()} Musubi ・ {d.footer.made}</div>
+  </div>
 </footer>
+</div>
 <script is:inline src={`${base}app/theme.js`}></script>
 </body>
 </html>
