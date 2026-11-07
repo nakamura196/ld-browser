@@ -1,0 +1,207 @@
+/* Colours come from the shared design (nakamura196/react-ui static.css, loaded before this file: --ds-*),
+   the same as Kasane, Awase and the TEI portal. The short names below are what the tables and graphs use. */
+:root {
+  --bg: var(--ds-bg); --fg: var(--ds-fg); --muted: var(--ds-fg-muted); --line: var(--ds-border); --th: var(--ds-surface-2);
+  --link: var(--ds-primary); --nest: var(--ds-surface); --card: var(--ds-bg);
+  --accent: var(--ds-primary); --accent2: var(--ds-blue-800, #07538f); --soft: var(--ds-blue-50, #e7f3fd);
+  --err: #b3261e; --tag: #8a6d00; --shadow: 0 1px 2px rgb(0 0 0 / .06), 0 4px 16px rgb(0 0 0 / .05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --err: #ff8a80; --tag: #e0c060; --accent2: var(--ds-accent); --soft: var(--ds-surface-2); --card: var(--ds-surface); --shadow: 0 1px 2px rgb(0 0 0 / .4); }
+}
+:root[data-theme="dark"] { --err: #ff8a80; --tag: #e0c060; --accent2: var(--ds-accent); --soft: var(--ds-surface-2); --card: var(--ds-surface); --shadow: 0 1px 2px rgb(0 0 0 / .4); color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-size: 15px; line-height: 1.6; }
+.page { display: flex; flex-direction: column; min-height: 100vh; }
+/* One page width for the header, the body and the footer. While a URI is shown (html.viewing) it is the full
+   window, like a fluid container: nested tables grow sideways. The home and other pages keep 1536px. */
+:root { --page-w: 96rem; }
+html.viewing { --page-w: none; }
+main { flex: 1; width: 100%; max-width: var(--page-w); margin: 0 auto; padding: 0 1rem; }
+.ds-header__inner, .ds-footer__inner { max-width: var(--page-w); }
+@media (min-width: 1280px) { main, header.site .uriform, .ds-header__inner, .ds-footer__inner { padding-left: 2rem; padding-right: 2rem; } }
+@media (min-width: 640px) { .ds-header__inner, .ds-footer__inner { padding-left: 2rem; padding-right: 2rem; } }
+@media (min-width: 640px) { main { padding: 0 2rem; } }
+a { color: var(--link); }
+/* The shared design boxes every <code>; here URIs are shown in code everywhere, so keep it plain. */
+code { font-size: 12px; color: var(--muted); word-break: break-all; padding: 0; background: none; border: 0; }
+/* The resource view is a dense table: a smaller size than the intro pages. */
+#out { font-size: 14px; line-height: 1.55; }
+button, select { font: inherit; }
+#out h2 { font-size: 15px; word-break: break-all; margin: 16px 0 8px; }
+#out h3 { font-size: 14px; margin: 24px 0 8px; }
+.source, .status { color: var(--muted); font-size: 12px; word-break: break-all; }
+.note { color: var(--tag); }
+.err { color: var(--err); padding: 6px 0; }
+table.res { border-collapse: collapse; width: 100%; table-layout: fixed; }
+table.res th, table.res td { border: 1px solid var(--line); padding: 4px 6px; vertical-align: top; text-align: left; }
+table.res th { background: var(--th); width: 28%; font-weight: normal; word-break: break-all; }
+.vals { word-break: break-word; }
+.val + .val { border-top: 1px dotted var(--line); margin-top: 2px; padding-top: 2px; }
+.val.folded { display: none; }
+.val > .num { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: .4em; float: left; }
+.vals.open .val.folded { display: block; }
+.short { color: var(--muted); font-size: 11px; }
+.tag { color: var(--tag); font-size: 11px; margin-left: 4px; }
+.bnode { color: var(--muted); }
+.nest { margin: 4px 0 2px 12px; background: var(--nest); }
+button.expand { border: none; background: none; color: var(--muted); cursor: pointer; padding: 0 4px 0 0; width: 1.4em; }
+.empty { color: var(--muted); }
+ul.inbound, ul.examples { padding-left: 20px; }
+.pred { color: var(--muted); }
+details.others { margin-top: 16px; }
+@media (max-width: 600px) { table.res th { width: 36%; } }
+.cross { padding: 6px 8px; border-left: 3px solid var(--link); background: var(--nest); }
+.graphbar { margin: 16px 0 12px; }
+/* small secondary buttons: graph, zoom, "show more" */
+button.graphbtn, .graphtools button, button.more {
+  font-size: 12px; padding: 3px 10px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--card); color: var(--link); cursor: pointer; box-shadow: var(--shadow);
+}
+button.more { margin-top: 4px; }
+button.graphbtn:hover, .graphtools button:hover, button.more:hover { background: var(--soft); border-color: var(--link); }
+button.graphbtn[aria-expanded="true"] { background: var(--soft); border-color: var(--link); }
+button.graphbtn:focus-visible, .graphtools button:focus-visible, button.more:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+/* why a document could not be read */
+.errbox { border: 1px solid var(--err); border-left-width: 4px; border-radius: 4px; padding: 8px 12px; margin: 8px 0; }
+.errbox .errhead { color: var(--err); font-weight: 600; }
+.errbox p { margin: 4px 0; }
+.errbox .errwhy { font-size: 13px; }
+.errbox .errhint { font-size: 13px; color: var(--muted); }
+.errbox dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+.errbox dd { margin: 0; word-break: break-all; }
+.nest .errbox { margin: 4px 0; }
+.graph { border: 1px solid var(--line); border-radius: 4px; margin-top: 6px; background: var(--bg); }
+.graphtools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border-bottom: 1px solid var(--line); }
+.graphtools button { min-width: 2.4em; }
+.graph svg { display: block; width: 100%; height: 520px; touch-action: none; cursor: grab; user-select: none; }
+.graph svg .edge { stroke: var(--muted); stroke-width: 1; }
+.graph svg .arrowhead { fill: var(--muted); }
+.graph svg .elabel { fill: var(--muted); font-size: 10px; text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+.graph svg .node rect { fill: var(--bg); stroke: var(--link); stroke-width: 1.2; }
+.graph svg .node.lit rect { fill: var(--th); stroke: var(--line); }
+.graph svg .node.bn rect { fill: var(--nest); stroke: var(--muted); stroke-dasharray: 3 2; }
+.graph svg .node.root rect { fill: var(--link); }
+.graph svg .node text { fill: var(--fg); font-size: 12px; }
+.graph svg .node.res text { fill: var(--link); }
+.graph svg .node.root text { fill: var(--bg); font-weight: bold; }
+.graph svg a .node { cursor: pointer; }
+@media (max-width: 600px) { .graph svg { height: 380px; } }
+
+/* ---- site frame: the shared design's header and footer (ds-header / ds-footer), as in the TEI portal ---- */
+.brand { font-size: 1.25rem; letter-spacing: .02em; }
+.ds-header__nav-link { white-space: nowrap; }
+.ds-header__nav-link[aria-current="page"] { color: var(--ds-primary); }
+.ds-header__actions { gap: .75rem; }
+@media (min-width: 640px) { .ds-header__actions { gap: 1.25rem; } }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem; border: 0; border-radius: .375rem;
+  background: transparent; color: var(--ds-fg-muted); cursor: pointer; text-decoration: none;
+}
+.icon-btn:hover { background: var(--ds-surface-2); color: var(--ds-fg); text-decoration: none; }
+.icon-btn:focus-visible, .backbtn:focus-visible { outline: 2px solid var(--ds-ring); outline-offset: 2px; }
+.lang-btn { width: auto; min-width: 2.25rem; padding: 0 .5rem; font-size: .875rem; font-weight: 600; }
+html[data-theme="dark"] .icon-moon, html:not([data-theme="dark"]) .icon-sun { display: none; }
+@media (max-width: 520px) { .ds-header__nav { gap: .6rem; } .ds-header__nav-link { font-size: .8rem; } .ds-header__actions { gap: .25rem; } }
+/* The address form under the header while a resource is shown */
+header.site .uriform { max-width: var(--page-w); margin: 0 auto; padding: 0 1rem 10px; }
+@media (min-width: 640px) { header.site .uriform { padding: 0 2rem 10px; } }
+.uriform { display: flex; gap: 8px; flex-wrap: wrap; }
+.uriform input { flex: 1 1 300px; min-width: 0; padding: 6px 10px; font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: var(--ds-radius); background: var(--bg); color: var(--fg); }
+.uriform input:focus { outline: 2px solid var(--ds-ring); outline-offset: 0; border-color: var(--ds-ring); }
+.uriform button { padding: 6px 16px; border: none; border-radius: var(--ds-radius); background: var(--ds-primary); color: var(--ds-primary-fg); font-weight: 600; cursor: pointer; }
+.uriform button:hover { background: var(--ds-primary-hover); }
+@media (min-width: 768px) { .ds-footer__grid { grid-template-columns: 2fr 1fr 1fr; } }
+.ds-footer__brand-desc a { text-decoration: underline; }
+.footer-note { display: block; font-size: .8rem; color: var(--ds-fg-muted); }
+
+/* ---- top page ---- */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: center; padding: 56px 0 40px; }
+.eyebrow { color: var(--accent2); font-weight: 600; font-size: 13px; letter-spacing: .04em; margin: 0 0 8px; }
+.hero h1 { font-family: var(--ds-font-serif); font-weight: 700; font-size: clamp(28px, 4.2vw, 42px); line-height: 1.3; margin: 0 0 16px; }
+.hero .nb { white-space: nowrap; }
+.hero .accent { color: var(--accent); background: linear-gradient(transparent 62%, var(--soft) 62%); }
+.lead { font-size: 16px; color: var(--muted); margin: 0 0 24px; max-width: 34em; }
+.uriform.big input { padding: 12px 14px; font-size: 16px; border-radius: 10px; box-shadow: var(--shadow); }
+.uriform.big button { padding: 12px 24px; font-size: 16px; border-radius: 10px; }
+.try { font-size: 13px; color: var(--muted); margin: 12px 0 0; }
+.try a { margin-left: 10px; }
+.hero-graph { width: 100%; height: auto; overflow: visible; }
+.hero-graph marker path { fill: var(--muted); }
+.h-edge line { stroke: var(--muted); stroke-width: 1.3; }
+.h-edge text { fill: var(--muted); font-size: 11px; text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 4px; }
+.h-node rect { fill: var(--soft); stroke: var(--accent); stroke-width: 1.5; }
+.h-node text { fill: var(--fg); font-size: 12px; text-anchor: middle; }
+.h-node.main rect { fill: var(--accent); }
+.h-node.main text { fill: var(--bg); font-weight: 700; font-size: 14px; }
+.h-node:nth-of-type(7n+4) rect { stroke: var(--accent2); }
+@media (prefers-reduced-motion: no-preference) {
+  .h-edge, .h-node { animation: pop .5s ease-out both; animation-delay: var(--d); }
+  @keyframes pop { from { opacity: 0; } to { opacity: 1; } }
+}
+.home section { margin: 0 0 48px; }
+/* Headings with a blue bar on the left (the shared design's SectionHeading, as in Kasane and the TEI portal) */
+.home section > h2, .section-h { display: flex; align-items: center; gap: .75rem; font-family: var(--ds-font-serif); font-weight: 600; font-size: 1.5rem; margin: 0 0 1.25rem; }
+.home section > h2::before, .section-h::before { content: ""; width: .25rem; height: 1.4em; flex-shrink: 0; border-radius: .25rem; background: var(--ds-primary); }
+.more-link { margin: 16px 0 0; font-size: 14px; }
+.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.feature { padding: 18px; border: 1px solid var(--line); border-radius: var(--ds-radius); background: var(--ds-surface); }
+.feature h2 { font-family: var(--ds-font-serif); font-size: 16px; margin: 0 0 6px; }
+.feature p { margin: 0; color: var(--muted); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.card { display: flex; flex-direction: column; gap: 4px; padding: 16px; border: 1px solid var(--line); border-radius: var(--ds-radius); background: var(--card); color: var(--fg); text-decoration: none; transition: border-color .15s, transform .15s; }
+.card:hover { border-color: var(--accent); transform: translateY(-2px); text-decoration: none; }
+.card .kind { font-size: 11px; font-weight: 600; color: var(--accent2); }
+.card span:not(.kind) { color: var(--muted); font-size: 13px; }
+.card code { margin-top: auto; padding-top: 6px; font-size: 11px; }
+.video .frame { aspect-ratio: 16 / 9; max-width: 1080px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #000; }
+.video iframe { display: block; width: 100%; height: 100%; border: 0; }
+.news ul { list-style: none; padding: 0; margin: 0; max-width: 1080px; }
+.news li { display: grid; grid-template-columns: 7em minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.news time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.how ol { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; counter-reset: step; }
+.how li { counter-increment: step; padding-left: 40px; position: relative; color: var(--muted); }
+.how li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--soft); color: var(--accent); font-weight: 700; display: grid; place-items: center; }
+.how li strong { display: block; color: var(--fg); }
+.aside { color: var(--muted); font-size: 13px; margin-top: 20px; }
+@media (max-width: 800px) {
+  .hero { grid-template-columns: minmax(0, 1fr); padding-top: 32px; }
+  .features, .how ol { grid-template-columns: minmax(0, 1fr); }
+  .news li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+}
+
+/* ---- text pages ---- */
+.prose { max-width: 56em; padding: 24px 0; font-size: 15px; }
+.prose h1 { font-size: 24px; }
+.prose h2 { font-size: 17px; margin-top: 28px; }
+
+/* ---- back button ---- */
+.backbtn { margin: 10px 0 0; font-size: 13px; padding: 3px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--link); cursor: pointer; box-shadow: var(--shadow); }
+.backbtn:hover { background: var(--soft); border-color: var(--link); }
+html[lang="en"] .hero .nb { white-space: normal; }
+
+/* The top page: intro without ?u=, the resource view with it (html.viewing). */
+html.viewing .home-only, html:not(.viewing) .view-only { display: none; }
+.thumb { display: block; margin: 2px 0 4px; width: fit-content; }
+.thumb img { display: block; max-width: min(240px, 100%); max-height: 160px; border: 1px solid var(--line); border-radius: 4px; background: var(--line); }
+
+/* ---- use cases ---- */
+.uc-page { padding: 2rem 0 0; }
+.uc-page h1.section-h { font-size: 1.875rem; }
+.uc-intro { color: var(--muted); max-width: 44em; margin: 0 0 2rem; }
+.uc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; }
+.uc { display: flex; flex-direction: column; gap: 8px; padding: 18px; border: 1px solid var(--line); border-radius: var(--ds-radius); background: var(--card); scroll-margin-top: 5rem; }
+.uc:target { border-color: var(--ds-primary); box-shadow: 0 0 0 2px var(--ds-ring); }
+.uc .kind { font-size: 12px; font-weight: 600; color: var(--accent2); }
+.uc h2 { font-family: var(--ds-font-serif); font-size: 17px; line-height: 1.45; margin: 0; }
+.uc p { margin: 0; color: var(--muted); font-size: 14px; }
+.uc .tags { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0; }
+.uc .tags li { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--ds-surface-2); color: var(--fg); }
+.uc .tags li.relay { background: transparent; border: 1px solid var(--ds-primary); color: var(--ds-primary); }
+.uc .actions { margin-top: auto; padding-top: 6px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 14px; }
+.uc .open { padding: 6px 14px; border-radius: var(--ds-radius); background: var(--ds-primary); color: var(--ds-primary-fg); font-weight: 600; }
+.uc .open:hover { background: var(--ds-primary-hover); text-decoration: none; }
+
+/* A URI that is itself an image file */
+img.imagefile { max-width: 100%; max-height: 80vh; height: auto; border: 1px solid var(--line, #ddd); border-radius: 6px; }
