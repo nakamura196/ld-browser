@@ -29,6 +29,8 @@
 import { load } from '../public/app/fetchrdf.js';
 import { resolve, isImageFile, relayable } from '../public/app/resolve.js';
 import { parseRdfXml } from '../public/app/rdfxml.js';
+import { collectTriples } from '../public/app/graph.js';
+import { Store, DataFactory as F } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 
 // --- Offline checks: [name, () => true | string (what went wrong)]
 const eq = (a, b) => a === b || `got ${JSON.stringify(a)}, expected ${JSON.stringify(b)}`;
@@ -53,6 +55,13 @@ const OFFLINE = [
     const q = parseRdfXml('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:s="http://schema.org/"><rdf:Description rdf:about="http://x/a"><s:name>a&#xD800;b</s:name></rdf:Description></rdf:RDF>', 'http://x/');
     return eq(q[0] && q[0].object.value, 'a�b');
   }],
+  ['Graph leaves out what the table folds (617 hasPart → 8)', () => {
+    const st = new Store(), a = F.namedNode('http://x/a'), hp = F.namedNode('http://purl.org/dc/terms/hasPart');
+    for (let i = 0; i < 617; i++) st.addQuad(a, hp, F.namedNode('http://x/p' + i));
+    st.addQuad(a, F.namedNode('http://www.w3.org/2000/01/rdf-schema#label'), F.literal('a'));
+    const r = collectTriples(a, st, 'http://x/a');
+    return eq(r.quads.length + ' ' + r.folded, '9 609');
+  }],
 ];
 
 // --- Live cases. min: at least this many triples. relayed: true / false / undefined (either).
@@ -74,6 +83,7 @@ const CASES = [
   { id: 'viaf-hokusai', note: 'http→https without CORS; Turtle gives 403; split character references', uri: 'http://viaf.org/viaf/69033717', min: 1000, relayed: false },
   { id: 'foaf-person', note: 'vocabulary file has no CORS → relay', uri: 'http://xmlns.com/foaf/0.1/Person', min: 500, relayed: true },
   { id: 'dbpedia-19th-century', note: 'slow source: 17–30 s on a cold request', uri: 'http://dbpedia.org/resource/19th_century', min: 100, relayed: false },
+  { id: 'ndl-iiif-v2', note: '@context is http://iiif.io/… (blocked on an https page) → asked over https', uri: 'https://dl.ndl.go.jp/api/iiif/3437686/manifest.json', min: 3000, relayed: false },
   { id: 'dcterms-creator', uri: 'http://purl.org/dc/terms/creator', min: 50, relayed: false },
 ];
 

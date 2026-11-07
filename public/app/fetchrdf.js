@@ -188,9 +188,32 @@ function parseFailure(e, format, type, text, facts) {
   return fail('parse', t('parseTitle', fmt), why, hint, facts);
 }
 
+// Remote @context documents. Many are named with http: (IIIF Presentation 2 uses
+// http://iiif.io/api/presentation/2/context.json), which an https page may not fetch (mixed content).
+// Ask for the https: address first, and the name as written only if that fails.
+const contexts = new Map(); // context url → Promise<RemoteDocument>
+function loadContext(url) {
+  if (!contexts.has(url)) {
+    const tries = url.startsWith('http:') ? ['https:' + url.slice(5), url] : [url];
+    contexts.set(url, (async () => {
+      let last;
+      for (const u of tries) {
+        try {
+          const res = await fetch(u, { headers: { Accept: 'application/ld+json, application/json' } });
+          if (!res.ok) throw new Error(`${res.status} ${u}`);
+          return { contextUrl: null, documentUrl: url, document: await res.json() };
+        } catch (e) { last = e; }
+      }
+      contexts.delete(url); // let a later document try again
+      throw new Error(`Could not load remote context ${url}: ${last && last.message}`);
+    })());
+  }
+  return contexts.get(url);
+}
+
 async function jsonLdQuads(json, baseIRI) {
   const { default: jsonld } = await import('https://cdn.jsdelivr.net/npm/jsonld@8.3.3/+esm');
-  const nq = await jsonld.toRDF(json, { format: 'application/n-quads', base: baseIRI });
+  const nq = await jsonld.toRDF(json, { format: 'application/n-quads', base: baseIRI, documentLoader: loadContext });
   return new Parser({ format: 'N-Quads' }).parse(nq);
 }
 

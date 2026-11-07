@@ -55,6 +55,21 @@ let lang = LANG; // labels follow the page language
 export function setLang(l) { lang = l; }
 export function getLang() { return lang; }
 
+// How the table orders and folds the values of one property; the graph leaves out the same ones.
+// 0: chosen language, 1: English, 2: no language tag or not a literal, 3: other languages.
+export function langRank(o) {
+  const l = (o.termType === 'Literal' && o.language) || '';
+  if (!l) return 2;
+  if (l === lang || l.startsWith(lang + '-')) return 0;
+  return l === 'en' || l.startsWith('en-') ? 1 : 3;
+}
+export const FOLD_AFTER = 8; // show this many values, hide the rest behind a button
+// values: already sorted by langRank. Labels in dozens of languages (Wikidata): show the preferred ones.
+export function foldAfter(values) {
+  const preferred = values.filter((o) => langRank(o) < 3).length;
+  return preferred && preferred < values.length && values.every((o) => o.termType === 'Literal') ? preferred : FOLD_AFTER;
+}
+
 // Pick the literal in the preferred language, then English, then no tag, then anything.
 export function pickLiteral(literals) {
   if (!literals.length) return null;

@@ -384,3 +384,13 @@ text/plain の平文、閉じていない JSON、MODS 風の XML、空の Turtle
 - 旧と新でページの住所は同じ（/, /en/, /about/, /browse/）なので、パスはそのまま渡せば足りる
 - 確認: `/browse/?u=<Wikidata の URI>` が `?u=` ごと 301 で移り、最後は 200。http は先に https へ 301、そのあと musubi へ
 - 手元の Cloudflare の鍵には転送の決まりを書ける権限が無い（audit-tokens.zsh で 0 本）ので、ダッシュボードで作った
+
+## 2026-11-06 IIIF Presentation 2 の @context と、大きな表のグラフ図（fix-context-graph ブランチ、未公開）
+
+- NDL の IIIF マニフェスト（`https://dl.ndl.go.jp/api/iiif/3437686/manifest.json`）が「@context を取りに行けません」で読めなかった。原因は @context が `http://iiif.io/api/presentation/2/context.json`（http）で、https の頁からは取得されないこと（混在コンテンツ）。iiif.io は https 版を CORS 許可つきで返す
+- 対処: JSON-LD の @context を読む処理（documentLoader）を自前にし、http の @context はまず https で取り、だめなら書かれたとおりに取る。iiif.io に限らない。一度取った @context は頁を開いている間は使い回す。手元で 4315 トリプル読めた（image/2 の context も https で取得）
+- 却下: IIIF 2・3 の context の同梱。https で取れる相手には不要で、版が変わったときに古いものを持ち続けることになる
+- グラフ図の 300 トリプル上限: 表で「ほか N 件」に畳む値をグラフ図からも除くようにした（畳み方の判定は labels.js の `foldAfter` に移し、表と図で共有）。図の下に「表で…まとめた値 N 件は省きました」と出す
+- 実測: 校異源氏の 02.json（hasPart 617 件、源氏テキスト DB の endings ワークツリーの手元版を CORS 付きのローカルサーバで配って確認）。625 トリプル → 図は 16 トリプル、省いた 609 件は表の「ほか 609 件」と一致
+- 公開版の w3id の context.json にはまだ hasPart が無い（v1.0.1 から）ので、公開版の 02.json では今は差が出ない
+- test/live.html に、図の省き方（オフライン）と NDL マニフェスト（≥3000、直接）を追加。offline 15/15、live 16/16

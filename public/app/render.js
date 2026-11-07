@@ -5,7 +5,7 @@
 import { DataFactory } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 import { load } from './fetchrdf.js';
 import { resolve, sameResource, imageUrl } from './resolve.js';
-import { shorten, label, harvest, getLang, PREFIXES } from './labels.js';
+import { shorten, label, harvest, PREFIXES, langRank, foldAfter as foldAt } from './labels.js';
 import { graphToggle } from './graph.js';
 import { t } from './i18n.js';
 
@@ -19,7 +19,6 @@ const IMAGE_PROPS = new Set([
   PREFIXES.foaf + 'thumbnail', PREFIXES.foaf + 'depiction',
   PREFIXES.wdt + 'P18', 'http://www.wikidata.org/prop/statement/P18',
 ]);
-const FOLD_AFTER = 8; // show this many values, hide the rest behind a button
 const MAX_DEPTH = 4;
 
 export const settings = { autoExpand: 1 }; // levels of linked RailClass resources to open automatically
@@ -83,9 +82,7 @@ export function resourceTable(subject, store, ctx = { depth: 0, seen: new Set(),
   }
   for (const p of preds) {
     const values = byPred.get(p).sort((a, b) => langRank(a) - langRank(b));
-    // Labels in dozens of languages (Wikidata): show the preferred ones, fold the rest.
-    const preferred = values.filter((o) => langRank(o) < 3).length;
-    const foldAfter = preferred && preferred < values.length && values.every((o) => o.termType === 'Literal') ? preferred : FOLD_AFTER;
+    const foldAfter = foldAt(values);
     const cell = h('td', { class: 'vals' });
     values.forEach((o, i) => {
       const v = h('div', { class: 'val' + (i >= foldAfter ? ' folded' : '') },
@@ -116,14 +113,6 @@ function thumb(o) {
   const a = h('a', { class: 'thumb', href: imageUrl(o.value, 0), target: '_blank', rel: 'noopener' }, img);
   img.addEventListener('error', () => a.remove());
   return a;
-}
-
-// 0: chosen language, 1: English, 2: no language tag or not a literal, 3: other languages.
-function langRank(o) {
-  const l = (o.termType === 'Literal' && o.language) || '';
-  if (!l) return 2;
-  if (l === getLang() || l.startsWith(getLang() + '-')) return 0;
-  return l === 'en' || l.startsWith('en-') ? 1 : 3;
 }
 
 function valueNode(o, store, ctx) {

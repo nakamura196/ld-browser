@@ -4,7 +4,7 @@
 
 import { sameResource } from './resolve.js';
 import { t } from './i18n.js';
-import { shorten, label, getLang } from './labels.js';
+import { shorten, label, langRank, foldAfter } from './labels.js';
 
 const MAX_TRIPLES = 300;
 const MAX_DEPTH = 4; // same as the table
@@ -14,37 +14,45 @@ const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
 
 // The triples the table for `subject` shows: its own, plus those of blank nodes and
 // resources described in the same document, followed down to MAX_DEPTH.
-// Literals in languages other than the chosen one and English are left out (Wikidata has dozens).
+// Values the table folds away (behind "N more") are left out, and not followed: a list of 617 parts
+// is drawn as its first few. Literals in languages other than the chosen one and English are among them
+// (Wikidata has dozens); they are counted apart.
 export function collectTriples(subject, store, docUri) {
   const quads = [];
-  let skipped = 0;
+  let skipped = 0, folded = 0;
   const done = new Set();
   const walk = (s, depth) => {
     const key = s.termType + ':' + s.value;
     if (done.has(key) || depth >= MAX_DEPTH) return;
     done.add(key);
+    const byPred = new Map();
     for (const q of store.getQuads(s, null, null, null)) {
-      if (otherLanguage(q.object)) { skipped++; continue; }
-      quads.push(q);
-      const o = q.object;
-      if (o.termType === 'Literal' || !store.countQuads(o, null, null, null)) continue;
-      if (o.termType === 'BlankNode' || !sameResource(o.value, docUri)) walk(o, depth + 1);
+      if (!byPred.has(q.predicate.value)) byPred.set(q.predicate.value, []);
+      byPred.get(q.predicate.value).push(q);
+    }
+    for (const group of byPred.values()) {
+      group.sort((a, b) => langRank(a.object) - langRank(b.object));
+      const keep = foldAfter(group.map((q) => q.object));
+      group.forEach((q, i) => {
+        if (i >= keep) { if (otherLanguage(q.object)) skipped++; else folded++; return; }
+        quads.push(q);
+        const o = q.object;
+        if (o.termType === 'Literal' || !store.countQuads(o, null, null, null)) return;
+        if (o.termType === 'BlankNode' || !sameResource(o.value, docUri)) walk(o, depth + 1);
+      });
     }
   };
   walk(subject, 0);
-  return { quads, skipped };
+  return { quads, skipped, folded };
 }
 
 function otherLanguage(o) {
-  const l = o.termType === 'Literal' && o.language;
-  if (!l) return false;
-  const ok = [getLang(), 'en'];
-  return !ok.some((x) => l === x || l.startsWith(x + '-'));
+  return langRank(o) === 3;
 }
 
 // A button that opens the drawing under the table, or a note saying why there is none.
 export function graphToggle(subject, store, docUri) {
-  const { quads, skipped } = collectTriples(subject, store, docUri);
+  const { quads, skipped, folded } = collectTriples(subject, store, docUri);
   const bar = document.createElement('div');
   bar.className = 'graphbar';
   if (!quads.length) return bar;
@@ -61,6 +69,7 @@ export function graphToggle(subject, store, docUri) {
     if (box) { box.remove(); box = null; btn.setAttribute('aria-expanded', 'false'); return; }
     box = drawGraph(subject, quads);
     if (skipped) box.append(note(t('graphSkipped', skipped)));
+    if (folded) box.append(note(t('graphFolded', folded)));
     bar.append(box);
     box.initView();
     btn.setAttribute('aria-expanded', 'true');
