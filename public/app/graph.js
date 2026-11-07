@@ -54,12 +54,21 @@ function otherLanguage(o) {
 
 // A button that opens the drawing under the table, or a note saying why there is none.
 export function graphToggle(subject, store, docUri) {
-  const { quads, skipped, folded } = collectTriples(subject, store, docUri);
+  const all = collectTriples(subject, store, docUri);
+  const { skipped, folded } = all;
+  let quads = all.quads, literals = 0;
   const bar = document.createElement('div');
   bar.className = 'graphbar';
   if (!quads.length) return bar;
+  // Too many to draw (Wikidata: hundreds of identifiers and dates): keep the links between resources,
+  // which is what a drawing shows better than the table, and leave the text values to the table.
   if (quads.length > MAX_TRIPLES) {
-    bar.append(note(t('graphTooBig', MAX_TRIPLES, quads.length)));
+    const links = quads.filter((q) => q.object.termType !== 'Literal');
+    literals = quads.length - links.length;
+    quads = links;
+  }
+  if (quads.length > MAX_TRIPLES || !quads.length) {
+    bar.append(note(t('graphTooBig', MAX_TRIPLES, all.quads.length)));
     return bar;
   }
   const btn = document.createElement('button');
@@ -72,6 +81,7 @@ export function graphToggle(subject, store, docUri) {
     box = drawGraph(subject, quads);
     if (skipped) box.append(note(t('graphSkipped', skipped)));
     if (folded) box.append(note(t('graphFolded', folded)));
+    if (literals) box.append(note(t('graphLiterals', literals, MAX_TRIPLES)));
     bar.append(box);
     box.initView();
     btn.setAttribute('aria-expanded', 'true');

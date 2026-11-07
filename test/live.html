@@ -29,7 +29,7 @@
 import { load } from '../public/app/fetchrdf.js';
 import { resolve, isImageFile, relayable } from '../public/app/resolve.js';
 import { parseRdfXml } from '../public/app/rdfxml.js';
-import { collectTriples } from '../public/app/graph.js';
+import { collectTriples, graphToggle } from '../public/app/graph.js';
 import { Store, DataFactory as F } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 
 // --- Offline checks: [name, () => true | string (what went wrong)]
@@ -63,6 +63,12 @@ const OFFLINE = [
     st.addQuad(a, hp, nodes[0]);
     const r = collectTriples(a, st, 'http://x/a');
     return eq(r.quads.map((q) => q.predicate.value.slice(9) + ' ' + q.object.value.slice(9)).join(','), 'canvases c0,canvases c1,canvases c2');
+  }],
+  ['Over 300: text values are left out, links are drawn', () => {
+    const st = new Store(), a = F.namedNode('http://x/a');
+    for (let i = 0; i < 350; i++) st.addQuad(a, F.namedNode('http://x/id' + i), F.literal('v' + i));
+    for (let i = 0; i < 20; i++) st.addQuad(a, F.namedNode('http://x/link' + i), F.namedNode('http://y/r' + i));
+    return eq(graphToggle(a, st, 'http://x/a').querySelector('.graphbtn')?.textContent, 'グラフ図（20 トリプル）');
   }],
   ['Graph leaves out what the table folds (617 hasPart → 8)', () => {
     const st = new Store(), a = F.namedNode('http://x/a'), hp = F.namedNode('http://purl.org/dc/terms/hasPart');
