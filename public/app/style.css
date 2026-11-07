@@ -39,6 +39,7 @@ table.res th { background: var(--th); width: 28%; font-weight: normal; word-brea
 .vals { word-break: break-word; }
 .val + .val { border-top: 1px dotted var(--line); margin-top: 2px; padding-top: 2px; }
 .val.folded { display: none; }
+.val > .num { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: .4em; float: left; }
 .vals.open .val.folded { display: block; }
 .short { color: var(--muted); font-size: 11px; }
 .tag { color: var(--tag); font-size: 11px; margin-left: 4px; }

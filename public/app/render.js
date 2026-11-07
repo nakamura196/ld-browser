@@ -5,7 +5,7 @@
 import { DataFactory } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 import { load } from './fetchrdf.js';
 import { resolve, sameResource, imageUrl } from './resolve.js';
-import { shorten, label, harvest, PREFIXES, langRank, foldAfter as foldAt } from './labels.js';
+import { shorten, label, harvest, PREFIXES, foldAfter as foldAt, propertyValues } from './labels.js';
 import { graphToggle } from './graph.js';
 import { t } from './i18n.js';
 
@@ -81,11 +81,12 @@ export function resourceTable(subject, store, ctx = { depth: 0, seen: new Set(),
     table.append(h('tr', {}, h('td', { class: 'empty', colspan: 2 }, t('emptyDoc'))));
   }
   for (const p of preds) {
-    const values = byPred.get(p).sort((a, b) => langRank(a) - langRank(b));
-    const foldAfter = foldAt(values);
+    const values = propertyValues(store, byPred.get(p));
+    const foldAfter = foldAt(values.map((v) => v.term));
     const cell = h('td', { class: 'vals' });
-    values.forEach((o, i) => {
+    values.forEach(({ term: o, n }, i) => {
       const v = h('div', { class: 'val' + (i >= foldAfter ? ' folded' : '') },
+        n ? h('span', { class: 'num' }, n + '.') : null,
         IMAGE_PROPS.has(p) ? thumb(o) : null,
         valueNode(o, store, { ...ctx, seen }));
       cell.append(v);

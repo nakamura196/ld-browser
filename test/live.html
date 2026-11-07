@@ -55,6 +55,15 @@ const OFFLINE = [
     const q = parseRdfXml('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:s="http://schema.org/"><rdf:Description rdf:about="http://x/a"><s:name>a&#xD800;b</s:name></rdf:Description></rdf:RDF>', 'http://x/');
     return eq(q[0] && q[0].object.value, 'a�b');
   }],
+  ['An RDF list opens into its items, in order', () => {
+    const st = new Store(), a = F.namedNode('http://x/a'), hp = F.namedNode('http://x/canvases');
+    const R = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+    const nodes = [0, 1, 2].map(() => st.createBlankNode());
+    nodes.forEach((b, i) => { st.addQuad(b, F.namedNode(R + 'first'), F.namedNode('http://x/c' + i)); st.addQuad(b, F.namedNode(R + 'rest'), nodes[i + 1] || F.namedNode(R + 'nil')); });
+    st.addQuad(a, hp, nodes[0]);
+    const r = collectTriples(a, st, 'http://x/a');
+    return eq(r.quads.map((q) => q.predicate.value.slice(9) + ' ' + q.object.value.slice(9)).join(','), 'canvases c0,canvases c1,canvases c2');
+  }],
   ['Graph leaves out what the table folds (617 hasPart → 8)', () => {
     const st = new Store(), a = F.namedNode('http://x/a'), hp = F.namedNode('http://purl.org/dc/terms/hasPart');
     for (let i = 0; i < 617; i++) st.addQuad(a, hp, F.namedNode('http://x/p' + i));
@@ -83,7 +92,7 @@ const CASES = [
   { id: 'viaf-hokusai', note: 'http→https without CORS; Turtle gives 403; split character references', uri: 'http://viaf.org/viaf/69033717', min: 1000, relayed: false },
   { id: 'foaf-person', note: 'vocabulary file has no CORS → relay', uri: 'http://xmlns.com/foaf/0.1/Person', min: 500, relayed: true },
   { id: 'dbpedia-19th-century', note: 'slow source: 17–30 s on a cold request', uri: 'http://dbpedia.org/resource/19th_century', min: 100, relayed: false },
-  { id: 'ndl-iiif-v2', note: '@context is http://iiif.io/… (blocked on an https page) → asked over https', uri: 'https://dl.ndl.go.jp/api/iiif/3437686/manifest.json', min: 3000, relayed: false },
+  { id: 'ndl-iiif-v2', note: '@context is http://iiif.io/… (blocked on an https page) → asked over https; canvases and ranges are @list', uri: 'https://dl.ndl.go.jp/api/iiif/3437686/manifest.json', min: 3000, relayed: false },
   { id: 'dcterms-creator', uri: 'http://purl.org/dc/terms/creator', min: 50, relayed: false },
 ];
 

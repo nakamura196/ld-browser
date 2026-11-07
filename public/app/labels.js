@@ -63,6 +63,42 @@ export function langRank(o) {
   if (l === lang || l.startsWith(lang + '-')) return 0;
   return l === 'en' || l.startsWith('en-') ? 1 : 3;
 }
+// An RDF list (rdf:first / rdf:rest, as JSON-LD @list and Turtle ( ) make it) is a chain of nodes,
+// one per item. Drawn as it is, each item sits one level deeper than the one before (a IIIF manifest's
+// canvases end up cut off after a few). Return the items in order, or null if `node` is not a well-formed
+// list: each node has exactly one rdf:first and one rdf:rest and nothing else, and the chain ends at rdf:nil.
+const RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+export function listItems(store, node) {
+  if (node.termType === 'NamedNode' && node.value === RDF + 'nil') return [];
+  if (node.termType !== 'BlankNode') return null;
+  const items = [];
+  const seen = new Set();
+  for (let n = node; !(n.termType === 'NamedNode' && n.value === RDF + 'nil');) {
+    if (n.termType !== 'BlankNode' || seen.has(n.value)) return null;
+    seen.add(n.value);
+    const qs = store.getQuads(n, null, null, null);
+    const first = qs.filter((q) => q.predicate.value === RDF + 'first');
+    const rest = qs.filter((q) => q.predicate.value === RDF + 'rest');
+    if (first.length !== 1 || rest.length !== 1 || qs.length !== 2) return null;
+    items.push(first[0].object);
+    n = rest[0].object;
+  }
+  return items;
+}
+
+// The values of one property as the table and the graph show them: lists opened into their items
+// (numbered, in their own order), the rest sorted by language.
+export function propertyValues(store, objects) {
+  const out = [];
+  let ordered = false;
+  for (const o of objects) {
+    const items = o.termType === 'BlankNode' ? listItems(store, o) : null;
+    if (items) { ordered = true; items.forEach((term, i) => out.push({ term, n: i + 1 })); } else out.push({ term: o });
+  }
+  if (!ordered) out.sort((a, b) => langRank(a.term) - langRank(b.term));
+  return out;
+}
+
 export const FOLD_AFTER = 8; // show this many values, hide the rest behind a button
 // values: already sorted by langRank. Labels in dozens of languages (Wikidata): show the preferred ones.
 export function foldAfter(values) {

@@ -4,7 +4,8 @@
 
 import { sameResource } from './resolve.js';
 import { t } from './i18n.js';
-import { shorten, label, langRank, foldAfter } from './labels.js';
+import { DataFactory as F } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
+import { shorten, label, langRank, foldAfter, propertyValues } from './labels.js';
 
 const MAX_TRIPLES = 300;
 const MAX_DEPTH = 4; // same as the table
@@ -27,11 +28,12 @@ export function collectTriples(subject, store, docUri) {
     done.add(key);
     const byPred = new Map();
     for (const q of store.getQuads(s, null, null, null)) {
-      if (!byPred.has(q.predicate.value)) byPred.set(q.predicate.value, []);
-      byPred.get(q.predicate.value).push(q);
+      if (!byPred.has(q.predicate.value)) byPred.set(q.predicate.value, { p: q.predicate, objects: [] });
+      byPred.get(q.predicate.value).objects.push(q.object);
     }
-    for (const group of byPred.values()) {
-      group.sort((a, b) => langRank(a.object) - langRank(b.object));
+    for (const { p, objects } of byPred.values()) {
+      // Lists are drawn as arrows straight to their items, without the chain of list nodes.
+      const group = propertyValues(store, objects).map((v) => F.quad(s, p, v.term));
       const keep = foldAfter(group.map((q) => q.object));
       group.forEach((q, i) => {
         if (i >= keep) { if (otherLanguage(q.object)) skipped++; else folded++; return; }
