@@ -18,6 +18,8 @@ export const PREFIXES = {
   md: 'http://www.w3.org/ns/md#',
   og: 'http://ogp.me/ns#',
   geo: 'http://www.opengis.net/ont/geosparql#',
+  did: 'https://www.w3.org/ns/did#',
+  sec: 'https://w3id.org/security#',
   wd: 'http://www.wikidata.org/entity/',
   wdt: 'http://www.wikidata.org/prop/direct/',
   wikibase: 'http://wikiba.se/ontology#',

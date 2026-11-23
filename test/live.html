@@ -29,7 +29,7 @@
 import { load } from '../public/app/fetchrdf.js';
 import { resolve, isImageFile, relayable } from '../public/app/resolve.js';
 import { parseRdfXml } from '../public/app/rdfxml.js';
-import { collectTriples, graphToggle } from '../public/app/graph.js';
+import { collectTriples, graphToggle, drawGraph } from '../public/app/graph.js';
 import { pickSubject } from '../public/app/render.js';
 import { Store, DataFactory as F } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 
@@ -101,6 +101,16 @@ const OFFLINE = [
     st.addQuad(b, F.namedNode('http://schema.org/name'), F.literal('Anon'));
     const s = pickSubject({ uri: 'https://example.org/page', store: st }, 'https://example.org/page');
     return eq(s.value, 'https://example.org/page');
+  }],
+  ['Parallel and bidirectional edges curve onto distinct paths', () => {
+    const a = F.namedNode('did:web:example.org'), b = F.namedNode('did:web:example.org#key-1');
+    const quads = [
+      F.quad(a, F.namedNode('https://w3id.org/security#assertionMethod'), b),
+      F.quad(a, F.namedNode('https://w3id.org/security#verificationMethod'), b),
+      F.quad(b, F.namedNode('https://w3id.org/security#controller'), a),
+    ];
+    const ds = [...drawGraph(a, quads).querySelectorAll('path.edge')].map((p) => p.getAttribute('d'));
+    return eq(new Set(ds).size, 3);
   }],
 ];
 

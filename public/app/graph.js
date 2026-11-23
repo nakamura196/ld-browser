@@ -172,6 +172,17 @@ function layout({ root, nodes, edges }) {
     });
   }
 
+  // Deduplicate undirected pairs so parallel or bidirectional edges do not pull two nodes on top of each other.
+  const pairMap = new Map();
+  for (const e of edges) {
+    if (e.s === e.o) continue;
+    const pk = e.s.key < e.o.key ? `${e.s.key}\0${e.o.key}` : `${e.o.key}\0${e.s.key}`;
+    const p = pairMap.get(pk);
+    if (p) p.count++;
+    else pairMap.set(pk, { a: e.s, b: e.o, count: 1 });
+  }
+  const pairs = [...pairMap.values()];
+
   const k = 80; // ideal edge length
   const reach = 4 * k; // nodes further apart than this do not push each other
   const iterations = 300;
@@ -193,13 +204,13 @@ function layout({ root, nodes, edges }) {
         b.dx -= (dx / len) * f; b.dy -= (dy / len) * f;
       }
     }
-    for (const e of edges) {
-      if (e.s === e.o) continue;
-      const dx = e.s.x - e.o.x, dy = e.s.y - e.o.y;
+    for (const { a, b, count } of pairs) {
+      const dx = a.x - b.x, dy = a.y - b.y;
       const len = Math.max(1, Math.hypot(dx, dy));
-      const f = (len * len) / k;
-      e.s.dx -= (dx / len) * f; e.s.dy -= (dy / len) * f;
-      e.o.dx += (dx / len) * f; e.o.dy += (dy / len) * f;
+      const ideal = k + (count > 1 ? 110 : 0);
+      const f = (len * len) / ideal;
+      a.dx -= (dx / len) * f; a.dy -= (dy / len) * f;
+      b.dx += (dx / len) * f; b.dy += (dy / len) * f;
     }
     for (const n of nodes) {
       if (n.root) continue;
@@ -233,13 +244,32 @@ export function drawGraph(subject, quads) {
   const scene = svg('g');
   root.append(defs, scene);
 
-  // Edges first so nodes sit on top. Same pair, same direction: offset the labels a little.
+  // Group edges between the same pair of nodes (either direction) so parallel / bidirectional edges
+  // curve apart instead of overlapping on a single straight line.
+  const groups = new Map();
+  for (const e of g.edges) {
+    const [a, b] = e.s.key < e.o.key ? [e.s, e.o] : [e.o, e.s];
+    const pk = `${a.key}\0${b.key}`;
+    if (!groups.has(pk)) groups.set(pk, { a, b, list: [] });
+    groups.get(pk).list.push(e);
+  }
+  const edgeMeta = new Map();
+  for (const { a, b, list } of groups.values()) {
+    // Keep same-direction edges together so opposite directions bow to opposite sides.
+    list.sort((x, y) => (x.s === a ? 0 : 1) - (y.s === a ? 0 : 1));
+    const n = list.length;
+    list.forEach((e, idx) => {
+      edgeMeta.set(e, { a, b, offset: n > 1 ? (idx - (n - 1) / 2) * 38 : 0 });
+    });
+  }
+
+  // Edge paths first so nodes sit on top, then edge labels last so labels stay readable.
   const edgeEls = g.edges.map((e) => {
-    const line = svg('line', { class: 'edge', 'marker-end': 'url(#ldb-arrow)' });
-    const text = svg('text', { class: 'elabel' }, clip(label(e.pred) || shorten(e.pred), 22));
+    const path = svg('path', { class: 'edge', 'marker-end': 'url(#ldb-arrow)' });
+    const text = svg('text', { class: 'elabel' }, clip(label(e.pred) || shorten(e.pred), 24));
     text.append(svg('title', {}, e.pred));
-    scene.append(line, text);
-    return { e, line, text };
+    scene.append(path);
+    return { e, path, text, meta: edgeMeta.get(e) };
   });
   const nodeEls = new Map();
   for (const n of g.nodes) {
@@ -258,15 +288,31 @@ export function drawGraph(subject, quads) {
     scene.append(el);
     nodeEls.set(n, grp);
   }
+  for (const { text } of edgeEls) scene.append(text);
 
   const place = () => {
     for (const [n, grp] of nodeEls) grp.setAttribute('transform', `translate(${n.x},${n.y})`);
-    for (const { e, line, text } of edgeEls) {
-      const [x1, y1] = boxEdge(e.s, e.o.x, e.o.y);
-      const [x2, y2] = boxEdge(e.o, e.s.x, e.s.y);
-      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
-      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-      text.setAttribute('x', (x1 + x2) / 2); text.setAttribute('y', (y1 + y2) / 2 - 3);
+    for (const { e, path, text, meta } of edgeEls) {
+      if (meta.offset === 0 || e.s === e.o) {
+        const [x1, y1] = boxEdge(e.s, e.o.x, e.o.y);
+        const [x2, y2] = boxEdge(e.o, e.s.x, e.s.y);
+        path.setAttribute('d', `M${x1},${y1} L${x2},${y2}`);
+        text.setAttribute('x', (x1 + x2) / 2);
+        text.setAttribute('y', (y1 + y2) / 2 - 3);
+      } else {
+        const { a, b, offset } = meta;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const nx = -dy / dist, ny = dx / dist;
+        const cx = (a.x + b.x) / 2 + nx * offset * 2;
+        const cy = (a.y + b.y) / 2 + ny * offset * 2;
+        const [x1, y1] = boxEdge(e.s, cx, cy);
+        const [x2, y2] = boxEdge(e.o, cx, cy);
+        path.setAttribute('d', `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`);
+        const side = Math.sign(offset) * 10;
+        text.setAttribute('x', 0.25 * x1 + 0.5 * cx + 0.25 * x2 + nx * side);
+        text.setAttribute('y', 0.25 * y1 + 0.5 * cy + 0.25 * y2 + ny * side - 2);
+      }
     }
   };
   place();

@@ -75,7 +75,7 @@ button.graphbtn:focus-visible, .graphtools button:focus-visible, button.more:foc
 .graphtools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px; border-bottom: 1px solid var(--line); }
 .graphtools button { min-width: 2.4em; }
 .graph svg { display: block; width: 100%; height: 520px; touch-action: none; cursor: grab; user-select: none; }
-.graph svg .edge { stroke: var(--muted); stroke-width: 1; }
+.graph svg .edge { fill: none; stroke: var(--muted); stroke-width: 1; }
 .graph svg .arrowhead { fill: var(--muted); }
 .graph svg .elabel { fill: var(--muted); font-size: 10px; text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
 .graph svg .node rect { fill: var(--bg); stroke: var(--link); stroke-width: 1.2; }
