@@ -72,6 +72,9 @@ async function show(uri) {
   out.append(await crossLinks(doc));
   if (!doc.store.countQuads(subject, null, null, null)) {
     out.append(el('p', { class: 'status' }, t('noSubject', doc.store.size)));
+  } else if (subject.value.replace(/^https?:/, '') !== uri.replace(/^https?:/, '')
+    && subject.value.replace(/^https?:/, '') !== doc.uri.replace(/^https?:/, '')) {
+    out.append(el('p', { class: 'status' }, t('fallbackSubject', doc.store.size)));
   }
   out.append(el('h2', {}, el('span', { class: 'uri', 'data-uri': subject.value }, el('a', { class: 'lab', href: subject.value, target: '_blank', rel: 'noopener' }, subject.value))));
   out.append(resourceTable(subject, doc.store, { depth: 0, seen: new Set(), docUri: doc.uri }));

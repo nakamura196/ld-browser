@@ -187,11 +187,38 @@ export function errorBox(doc, { withUrl = false } = {}) {
   return box;
 }
 
-// The fetched document may name the resource slightly differently (http/https, wdt: vs entity).
+// The fetched document may name the resource slightly differently (http/https, wdt: vs entity),
+// or use a different URI scheme altogether (e.g. did:web: served at /.well-known/did.json,
+// #me in a WebID card, or an entity URI without the .jsonld/.ttl file extension).
 export function pickSubject(doc, uri) {
   const candidates = [uri, doc.uri, uri.replace(/^http:/, 'https:'), uri.replace(/^https:/, 'http:')];
   const hit = candidates.find((c) => doc.store.countQuads(DataFactory.namedNode(c), null, null, null));
-  return DataFactory.namedNode(hit || doc.uri);
+  if (hit) return DataFactory.namedNode(hit);
+
+  const subjects = doc.store.getSubjects(null, null, null).filter((s) => s.termType === 'NamedNode');
+  if (!subjects.length) return DataFactory.namedNode(doc.uri);
+
+  const bare = uri.replace(/\.(?:jsonld|json|ttl|nt|nq|trig|rdf|xml)$/i, '');
+  if (bare !== uri) {
+    const extHit = [bare, bare.replace(/^http:/, 'https:'), bare.replace(/^https:/, 'http:')]
+      .find((c) => doc.store.countQuads(DataFactory.namedNode(c), null, null, null));
+    if (extHit) return DataFactory.namedNode(extHit);
+  }
+
+  // Pick a representative subject: roots (nothing points at them) first, then fragment-free URIs
+  // over #fragments, then more statements, then shorter URIs.
+  const rank = (s) => {
+    const inbound = doc.store.getQuads(null, null, s, null).filter((q) => !q.subject.equals(s)).length;
+    const hasFrag = s.value.includes('#') ? 1 : 0;
+    const out = doc.store.countQuads(s, null, null, null);
+    return [inbound === 0 ? 0 : 1, hasFrag, -out, s.value.length];
+  };
+  subjects.sort((a, b) => {
+    const ra = rank(a), rb = rank(b);
+    for (let i = 0; i < ra.length; i++) if (ra[i] !== rb[i]) return ra[i] - rb[i];
+    return a.value.localeCompare(b.value);
+  });
+  return subjects[0];
 }
 
 // Re-draw link texts whose labels have become known.

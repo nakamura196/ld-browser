@@ -30,6 +30,7 @@ import { load } from '../public/app/fetchrdf.js';
 import { resolve, isImageFile, relayable } from '../public/app/resolve.js';
 import { parseRdfXml } from '../public/app/rdfxml.js';
 import { collectTriples, graphToggle } from '../public/app/graph.js';
+import { pickSubject } from '../public/app/render.js';
 import { Store, DataFactory as F } from 'https://cdn.jsdelivr.net/npm/n3@1.17.4/+esm';
 
 // --- Offline checks: [name, () => true | string (what went wrong)]
@@ -77,6 +78,30 @@ const OFFLINE = [
     const r = collectTriples(a, st, 'http://x/a');
     return eq(r.quads.length + ' ' + r.folded, '9 609');
   }],
+  ['pickSubject falls back to fragment-free DID root over #key-1', () => {
+    const st = new Store(), root = F.namedNode('did:web:example.org'), key = F.namedNode('did:web:example.org#key-1');
+    st.addQuad(root, F.namedNode('https://w3id.org/security#verificationMethod'), key);
+    st.addQuad(root, F.namedNode('https://w3id.org/security#assertionMethod'), key);
+    st.addQuad(key, F.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), F.namedNode('https://w3id.org/security#JsonWebKey2020'));
+    st.addQuad(key, F.namedNode('https://w3id.org/security#controller'), root);
+    st.addQuad(key, F.namedNode('https://w3id.org/security#publicKeyJwk'), F.literal('{}'));
+    const s = pickSubject({ uri: 'https://example.org/.well-known/did.json', store: st }, 'https://example.org/.well-known/did.json');
+    return eq(s.value, 'did:web:example.org');
+  }],
+  ['pickSubject strips .jsonld file extension before ranking', () => {
+    const st = new Store(), item = F.namedNode('https://example.org/item'), other = F.namedNode('https://example.org/other');
+    st.addQuad(item, F.namedNode('http://schema.org/name'), F.literal('Item'));
+    st.addQuad(other, F.namedNode('http://schema.org/name'), F.literal('Other'));
+    st.addQuad(other, F.namedNode('http://schema.org/description'), F.literal('More triples'));
+    const s = pickSubject({ uri: 'https://example.org/item.jsonld', store: st }, 'https://example.org/item.jsonld');
+    return eq(s.value, 'https://example.org/item');
+  }],
+  ['pickSubject keeps doc.uri when only blank nodes exist', () => {
+    const st = new Store(), b = st.createBlankNode();
+    st.addQuad(b, F.namedNode('http://schema.org/name'), F.literal('Anon'));
+    const s = pickSubject({ uri: 'https://example.org/page', store: st }, 'https://example.org/page');
+    return eq(s.value, 'https://example.org/page');
+  }],
 ];
 
 // --- Live cases. min: at least this many triples. relayed: true / false / undefined (either).
@@ -100,6 +125,7 @@ const CASES = [
   { id: 'dbpedia-19th-century', note: 'slow source: 17–30 s on a cold request', uri: 'http://dbpedia.org/resource/19th_century', min: 100, relayed: false },
   { id: 'ndl-iiif-v2', note: '@context is http://iiif.io/… (blocked on an https page) → asked over https; canvases and ranges are @list', uri: 'https://dl.ndl.go.jp/api/iiif/3437686/manifest.json', min: 3000, relayed: false },
   { id: 'dcterms-creator', uri: 'http://purl.org/dc/terms/creator', min: 50, relayed: false },
+  { id: 'id-ldas-did', note: 'DID document: URL is /.well-known/did.json, subject is did:web:id.ldas.jp', uri: 'https://id.ldas.jp/.well-known/did.json', subject: 'did:web:id.ldas.jp', min: 5, relayed: false },
 ];
 
 const off = document.getElementById('offline');
